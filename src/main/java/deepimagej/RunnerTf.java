@@ -44,13 +44,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-import org.tensorflow.SavedModelBundle;
-import org.tensorflow.Session;
-import org.tensorflow.Tensor;
-import org.tensorflow.framework.SignatureDef;
-import org.tensorflow.framework.TensorInfo;
 
-import ai.djl.ndarray.NDArray;
 import deepimagej.tools.ArrayOperations;
 import deepimagej.tools.CompactMirroring;
 import deepimagej.tools.DijTensor;
@@ -128,13 +122,6 @@ private int							currentPatch = 0;
 				params.inputList.get(c).inputPixelSizeY = inputPixelSizeY;
 				params.inputList.get(c).inputPixelSizeZ = inputPixelSizeZ;
 				inputImageInd = c;
-			} else if (tensor.tensorType.contains("parameter")){
-				Tensor<?> tensorVal = getTensorFromMap(inputMap, tensor);
-				if (tensorVal == null) {
-					rp.stop();
-					return null;
-				}
-				parameterMap.put(tensor.name, tensorVal);
 			}
 			c ++;
 		}
@@ -216,7 +203,7 @@ private int							currentPatch = 0;
 		// Reset the counter to 0 use it again
 		c = 0;
 		for (DijTensor outName: params.outputList) {
-			outputTitles[c++] = outName.name  + " " + dp.getName() + " of " + imp.getTitle();
+			outputTitles[c++] = outName.name  + " " + dp.params.name + " of " + imp.getTitle();
 		}
 
 		// Order of the dimensions. For example "NHWC"-->Batch size, Height, Width, Channels
@@ -564,38 +551,6 @@ private int							currentPatch = 0;
 		return imp;
 	}
 	
-	private static Tensor<?> getTensorFromMap(HashMap<String, Object> inputMap, DijTensor tensor){
-		if (!inputMap.containsKey(tensor.name)){
-			IJ.error("Preprocessing should provide a HashMap with\n"
-					+ "the key " + tensor.name);
-			return null;
-		} else if (!(inputMap.get(tensor.name) instanceof Tensor<?>)) {
-			IJ.error("The input " + tensor.name + " should"
-					+ " be an instance of a Tensor.");
-			return null;
-		}
-		return (Tensor<?>) inputMap.get(tensor.name);
-	}
-	
-	private static Tensor<?>[] getInputTensors(List<DijTensor> inputTensors, HashMap<String, Object> paramsMap,
-												ImagePlus im, int pc){
-		Tensor<?>[] tensorsArray = new Tensor<?>[inputTensors.size()];
-		int c = 0;
-		for (DijTensor tensor : inputTensors) {
-			if (tensor.tensorType.contains("parameter") && paramsMap.get(tensor.name) instanceof Tensor<?>) {
-				tensorsArray[c ++] = (Tensor<?>) paramsMap.get(tensor.name);
-			} else if (tensor.tensorType.contains("parameter") && paramsMap.get(tensor.name) instanceof NDArray) {
-				NDArray t = (NDArray) paramsMap.get(tensor.name);
-				final float[] out = t.toFloatArray();
-				FloatBuffer outBuff = FloatBuffer.wrap(out);
-				tensorsArray[c ++] = Tensor.create(t.getShape().getShape(), outBuff);
-			} else {
-				tensorsArray[c ++] = ImagePlus2Tensor.implus2TensorFloat(im, tensor.form);
-			}
-		}
-		return tensorsArray;
-	}
-	
 	private static float[] findOutputSize(int[] inpSize, DijTensor outTensor, List<DijTensor> inputList, int[] patchSize) {
 		String refForOutput = outTensor.referenceImage;
 		DijTensor refTensor = DijTensor.retrieveByName(refForOutput, inputList);
@@ -613,14 +568,6 @@ private int							currentPatch = 0;
 			}
 		}
 		return outSize;
-	}
-
-	private String opName(final TensorInfo t) {
-		final String n = t.getName();
-		if (n.endsWith(":0")) {
-			return n.substring(0, n.lastIndexOf(":0"));
-		}
-		return n;
 	}
 	
 	public static int[] findTotalPadding(List<DijTensor> outputs) {
