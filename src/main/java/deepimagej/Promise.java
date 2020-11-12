@@ -1,6 +1,8 @@
 package deepimagej;
+import ij.ImagePlus;
 
 public interface Promise {
-    void resolve(Object output);
+    void resolveImagePlus(ImagePlus image);
+    void resolveString(String output);
     void reject(String error);
 }

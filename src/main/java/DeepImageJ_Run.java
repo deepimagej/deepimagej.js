@@ -134,12 +134,14 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 		GenericDialog dlg = new GenericDialog("DeepImageJ Run [" + Constants.version + "]");
 		
 		// return a list of names (string)
-		Global.jsCall("callPlugin", "ImJoyModelRunner", "getModelList", new Promise(){
-					public void resolve(Object result){
-						modelList = (String[]) result;
+		Global.jsCall("callPlugin", "ImJoyModelRunner", "getModels", new Promise(){
+					public void resolveString(String result){
+						modelList = result.split(",");
+					}
+					public void resolveImagePlus(ImagePlus result){
 					}
 					public void reject(String error){
-						IJ.error("Cannot fetch list of models from Bioimage Model Zoo");
+						IJ.error("Cannot fetch list of models from Bioimage Model Zoo, error: "+error);
 					}
 				});
 		String[] items = new String[modelList.length + 1];
@@ -349,11 +351,13 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 			DeepImageJ dp = null;
 			rawYaml = "";
 			Global.jsCall("callPlugin", "ImJoyModelRunner", "getModelInfo", modelName,  new Promise(){
-				public void resolve(Object yamlString){			
-					rawYaml = (String) yamlString;
+				public void resolveString(String result){
+					rawYaml = result;
+				}
+				public void resolveImagePlus(ImagePlus result){
 				}
 				public void reject(String error){
-					IJ.error("Unable to fetch the model yaml from the Bioimage Zoo");
+					IJ.error("Unable to fetch the model yaml from the Bioimage Zoo, error:" + error);
 				}
 			});
 			try {

@@ -337,14 +337,15 @@ public class RunnerTf implements Callable<HashMap<String, Object>> {
 					try {
 						// Call the ImJoyModelRunner from the ImJoy API to run the TF model
 						Global.jsCall("callPlugin", "ImJoyModelRunner", "predict", yaml, patch,  new Promise(){
-			                public void resolve(Object output){
-			                    // do postprocessing here with the output
-			                	outputImages[0] = (ImagePlus) output;
-			                }
+							public void resolveString(String result){
+							}
+							public void resolveImagePlus(ImagePlus output){
+								// do postprocessing here with the output
+			                	outputImages[0] = output;
+							}
 			                public void reject(String error){
 			                    // show the error here
-			                	IJ.log(error);
-			                	IJ.error("An error occurred trying to run the model using the ImJoy API");
+			                	IJ.error("An error occurred trying to run the model using the ImJoy API, error:" + error);
 			                }
 			            });
 					}
