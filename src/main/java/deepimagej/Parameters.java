@@ -220,6 +220,23 @@ public class Parameters {
 		// If the model is not valid or we are in the developer plugin,
 		// we cannot read the parameters from anywhere as there is no
 		// config file
+		name = "exampleModel";
+		inputList 	= new ArrayList<>();
+		outputList 	= new ArrayList<>();
+		DijTensor inp = new DijTensor("input");
+		inp.form = "byxc";
+		inp.step = new int[]{0,1,1,0};
+		inp.minimum_size = new int[]{1,1,1,1};
+		DijTensor out = new DijTensor("output");
+		out.halo = new int[]{1,1,1,1};
+		inp.recommended_patch = new int[]{1,64,64,1};
+		inputList.add(inp);
+		outputList.add(out);
+		pyramidalNetwork = false;
+		allowPatching = true;
+		completeConfig = true;
+		fixedInput = false;
+		/*
 		Map<String, Object> obj =  new HashMap<String, Object>();
 
 
@@ -451,6 +468,7 @@ public class Parameters {
 				}
 				post.put(key, commands);
 			}
+			
 		}
 		
 		
@@ -463,6 +481,7 @@ public class Parameters {
 		tag = tag != null ? tag : "serve";
 		graph = graph != null ? graph : "serving_default";
 		
+		*/
 		/* TODO remove
 		// Check that the model sha256 is complete
 		saved_modelSha256 = (String) ((Map<String, Object>) obj.get("model")).get("sha256");

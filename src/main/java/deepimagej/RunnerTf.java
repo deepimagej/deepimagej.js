@@ -37,6 +37,7 @@
 
 package deepimagej;
 
+import java.awt.EventQueue;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -65,6 +66,7 @@ public class RunnerTf implements Callable<HashMap<String, Object>> {
 	private int						currentPatch = 0;
 	private int						totalPatch = 0;
 	private String 					yaml = "";
+	private boolean 				runModel = false;
 
 	public RunnerTf(DeepImageJ dp, RunnerProgress rp,HashMap<String,Object> inputMap, String yaml, Log log) {
 		this.dp = dp;
@@ -335,19 +337,40 @@ public class RunnerTf implements Callable<HashMap<String, Object>> {
 					
 					// TODO for the moment we assume one input / one output
 					try {
+						runModel = false;
 						// Call the ImJoyModelRunner from the ImJoy API to run the TF model
 						Global.jsCall("callPlugin", "ImJoyModelRunner", "predict", yaml, patch,  new Promise(){
 							public void resolveString(String result){
+								runModel = true;
 							}
 							public void resolveImagePlus(ImagePlus output){
 								// do postprocessing here with the output
+								runModel = true;
 			                	outputImages[0] = output;
 							}
 			                public void reject(String error){
 			                    // show the error here
+								runModel = true;
 			                	IJ.error("An error occurred trying to run the model using the ImJoy API, error:" + error);
 			                }
 			            });
+						try {
+							// block execution until we get the file path from js
+							EventQueue.invokeAndWait(new Runnable() {
+								public void run() {
+									while(!runModel){
+										try {
+											Thread.sleep(500);
+										} catch (Exception e) {
+											System.out.println(e.toString());
+											break;
+										}
+									}
+								}
+							});
+						} catch (Exception err) {
+							System.out.println(err.toString());
+						}
 					}
 					catch(IllegalArgumentException ex) {
 						ex.printStackTrace();	
