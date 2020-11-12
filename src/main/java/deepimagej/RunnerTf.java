@@ -44,6 +44,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+import com.leaningtech.client.Global;
 
 import deepimagej.tools.ArrayOperations;
 import deepimagej.tools.CompactMirroring;
@@ -61,14 +62,16 @@ public class RunnerTf implements Callable<HashMap<String, Object>> {
 	private DeepImageJ				dp;
 	private RunnerProgress			rp;
 	private Log						log;
-private int							currentPatch = 0;
+	private int						currentPatch = 0;
 	private int						totalPatch = 0;
+	private String 					yaml = "";
 
-	public RunnerTf(DeepImageJ dp, RunnerProgress rp,HashMap<String,Object> inputMap, Log log) {
+	public RunnerTf(DeepImageJ dp, RunnerProgress rp,HashMap<String,Object> inputMap, String yaml, Log log) {
 		this.dp = dp;
 		this.rp = rp;
 		this.log = log;
 		this.inputMap = inputMap;
+		this.yaml = yaml;
 		log.print("constructor runner");
 	}
 
@@ -80,27 +83,7 @@ private int							currentPatch = 0;
 
 
 		Parameters params = dp.params;
-		// Load the model first
-		SavedModelBundle model = dp.getTfModel();
-		log.print("model " + (model == null));
-		
-		String sigeDefTag = params.developer ? params.graph : TensorFlowModel.returnStringSig(params.graph);
-		SignatureDef sig = TensorFlowModel.getSignatureFromGraph(model, TensorFlowModel.returnStringSig(sigeDefTag));
-		log.print("sig " + (sig == null));
-		
-		if (!params.developer) {
-			String[] inputs = TensorFlowModel.returnInputs(sig);
-			for (int i = 0; i < inputs.length; i ++) {
-				if (DijTensor.retrieveByName(inputs[i], params.inputList) == null) {
-					DijTensor inp = new DijTensor(inputs[i]);
-					inp.tensorType = "parameter";
-					inp.setInDimensions(TensorFlowModel.modelEntryDimensions(sig, inputs[i]));
-					params.inputList.add(inp);
-				}
-			}
-		}
 		// Map that contains the input tensors that are not images.
-		// TODO restrict patching (or not) if the input contains parameters
         HashMap<String, Object> parameterMap = new HashMap<String, Object>(); 
 		ImagePlus imp = null;
 		// Auxiliary array with the same number of images as output tensors
@@ -350,42 +333,20 @@ private int							currentPatch = 0;
 						patch.getProcessor().resetMinAndMax();
 					}
 					
-					Tensor<?>[] inputTensors = getInputTensors(params.inputList, parameterMap,  patch, pc);
-					Session.Runner sess = model.session().runner();
-					
-					for (int k = 0; k < params.inputList.size(); k++) {
-						sess = sess.feed(opName(sig.getInputsOrThrow(params.inputList.get(k).name)), inputTensors[k]);
-					}
-					// Reinitialise the counter
-					c = 1;
-					for (DijTensor outTensor : params.outputList) {
-						sess = sess.fetch(opName(sig.getOutputsOrThrow(outTensor.name)));
-						log.print("Session fetch " + (c ++));
-					}
+					// TODO for the moment we assume one input / one output
 					try {
-						List<Tensor<?>> fetches = sess.run();
-						// Reinitialise counter
-						c = 0;
-						int imCounter = 0;
-						for (DijTensor outTensor : params.outputList) {
-							log.print("Session run " + (c+1) + "/"  + params.outputList.size());
-							Tensor<?> result = fetches.get(c);
-							if (outTensor.tensorType.contains("image") && !params.pyramidalNetwork && params.allowPatching) {
-								impatch[imCounter] = ImagePlus2Tensor.tensor2ImagePlus(result, outTensor.form, outTensor.name);
-								imCounter ++;
-								c ++;
-							} else if (outTensor.tensorType.contains("image") && (params.pyramidalNetwork  || !params.allowPatching)) {
-								outputImages[imCounter] = ImagePlus2Tensor.tensor2ImagePlus(result, outTensor.form, outTensor.name);
-								outputImages[imCounter].setTitle(outputTitles[imCounter]);
-								outputImages[imCounter].show();
-								imCounter ++;
-								c ++;
-							} else if (outTensor.tensorType.contains("list")){
-								ResultsTable table = Table2Tensor.tensor2Table(result, outTensor.form);
-								outputTables.add(table);
-								table.show(outputTitles[c ++] + " of patch " + currentPatch);
-							}
-						}
+						// Call the ImJoyModelRunner from the ImJoy API to run the TF model
+						Global.jsCall("callPlugin", "ImJoyModelRunner", "predict", yaml, patch,  new Promise(){
+			                public void resolve(ImagePlus output){
+			                    // do postprocessing here with the output
+			                	outputImages[0] = output;
+			                }
+			                public void reject(String error){
+			                    // show the error here
+			                	IJ.log(error);
+			                	IJ.error("An error occurred trying to run the model using the ImJoy API");
+			                }
+			            });
 					}
 					catch(IllegalArgumentException ex) {
 						ex.printStackTrace();	
@@ -432,73 +393,6 @@ private int							currentPatch = 0;
 									(int)(leftoverPixelsY * scaleY) - allOffsets[imCounter][1], (int)(leftoverPixelsZ * scaleZ) - allOffsets[imCounter][3]);
 							if (outputImages[imCounter] != null)
 								outputImages[imCounter].getProcessor().resetMinAndMax();
-							if (rp.isStopped()) {
-								rp.stop();
-								return null;
-							}
-							imCounter ++;
-						} else if (params.outputList.get(counter).tensorType.contains("image") && params.pyramidalNetwork) {
-							// TODO improve
-							int[] outPatchDims = outputImages[imCounter].getDimensions();
-							String[] ijForm = "XYCZB".split("");
-							String dijForm = params.outputList.get(counter).form;
-							int[] pyramidOut = params.outputList.get(counter).sizeOutputPyramid;
-							for (int dd = 0; dd < ijForm.length; dd ++) {
-								int idx = dijForm.indexOf(ijForm[dd]);
-								if (idx == -1 && outPatchDims[dd] == 1) {
-									continue;
-								} else if (idx != -1 && outPatchDims[dd] == pyramidOut[idx]) {
-									continue;
-								}
-								IJ.error("The dimensions of the output image do not coincide\n"
-										+ "with the dimensions specified previously:\n"
-										+ "Specified output dimensions: dimension order -> " + dijForm + ", dimension size -> " + Arrays.toString(pyramidOut) 
-										+ "Actual output dimensions: dimension order -> XYCZB, dimension size -> " + Arrays.toString(outPatchDims));
-								rp.stop();
-								return null;
-							}
-							if (rp.isStopped()) {
-								rp.stop();
-								return null;
-							}
-							imCounter ++;
-						} else if (params.outputList.get(counter).tensorType.contains("image") && !params.pyramidalNetwork && !params.allowPatching) {
-							// TODO improve
-							int[] outPatchDims = outputImages[imCounter].getDimensions();
-							String[] ijForm = "XYCZB".split("");
-							String dijForm = params.outputList.get(counter).form;
-							float[] scale = params.outputList.get(counter).scale;
-							int[] offset = params.outputList.get(counter).offset;
-							// TODO adapt for more inputs
-							// We take the mirrored image as the reference, because that is what ends
-							// up going into the model
-							int[] refSize = mirrorImage.getDimensions();
-							String thSizeStr = "[";
-							for (int dd = 0; dd < ijForm.length; dd ++) {
-								int idx = dijForm.indexOf(ijForm[dd]);
-								if (idx == -1 && outPatchDims[dd] == scale[idx]) {
-									thSizeStr += scale[idx] + ",";
-									continue;
-								} else if (idx != -1 && outPatchDims[dd] == (int)(refSize[dd] * scale[idx]) - offset[idx]) {
-									thSizeStr += ((int)(refSize[dd] * scale[idx]) - offset[idx]) + ",";
-									continue;
-								}
-								for (dd ++; dd < ijForm.length;) {
-									idx = dijForm.indexOf(ijForm[dd]);
-									if (idx == -1) {
-										thSizeStr += scale[idx] + ",";
-									} else if (idx != -1) {
-										thSizeStr += ((int)(refSize[dd] * scale[idx]) - offset[idx]) + ",";
-									}
-								}
-								thSizeStr = thSizeStr.substring(0, thSizeStr.length() - 1) + "]";
-								IJ.error("The dimensions of the output image do not coincide\n"
-										+ "with the dimensions specified previously:\n"
-										+ "Specified output dimensions: dimension order -> XYCZB, dimension size -> " + thSizeStr 
-										+ "Actual output dimensions: dimension order -> XYCZB, dimension size -> " + Arrays.toString(outPatchDims));
-								rp.stop();
-								return null;
-							}
 							if (rp.isStopped()) {
 								rp.stop();
 								return null;

@@ -64,16 +64,12 @@ public class ProcessingBridge {
 		if (params.firstPreprocessing != null && (params.firstPreprocessing.contains(".txt") || params.firstPreprocessing.contains(".ijm"))) {
 			im = runProcessingMacro(im, params.firstPreprocessing, params.developer);
 			map = manageInputs(map, false, params, im);
-		} else if (params.firstPreprocessing != null && (params.firstPreprocessing.contains(".jar") || params.firstPreprocessing.contains(".class") || new File(params.firstPreprocessing).isDirectory())) {
-			map = runPreprocessingJava(map, params.firstPreprocessing, params);
 		}
 		
 
 		if (params.secondPreprocessing != null && (params.secondPreprocessing.contains(".txt") || params.secondPreprocessing.contains(".ijm"))) {
 			im = runProcessingMacro(im, params.secondPreprocessing, params.developer);
 			map = manageInputs(map, true,  params, im);
-		} else if (params.secondPreprocessing != null && (params.secondPreprocessing.contains(".jar") || params.secondPreprocessing.contains(".class") || new File(params.secondPreprocessing).isDirectory())) {
-			map = runPreprocessingJava(map, params.secondPreprocessing, params);
 		} else if (params.secondPreprocessing == null && (params.firstPreprocessing == null || params.firstPreprocessing.contains(".txt") || params.firstPreprocessing.contains(".ijm"))) {
 			map = manageInputs(map, true, params);
 		} else if (params.secondPreprocessing == null && (params.firstPreprocessing.contains(".jar") || new File(params.firstPreprocessing).isDirectory())) {
@@ -119,13 +115,6 @@ public class ProcessingBridge {
 		return map;
 	}
 
-	private static HashMap<String, Object> runPreprocessingJava(HashMap<String, Object> map, String processingPath, Parameters params) throws JavaProcessingError {
-		boolean preprocessing = true;
-		ExternalClassManager processingRunner = new ExternalClassManager (processingPath, preprocessing, params);
-		map = processingRunner.javaPreprocess(map);
-		return map;
-	}
-
 	private static ImagePlus runProcessingMacro(ImagePlus img, String macroPath, boolean developer) throws MacrosError {
 		WindowManager.setTempCurrentImage(img);
 
@@ -158,37 +147,18 @@ public class ProcessingBridge {
 		if (params.firstPostprocessing != null && (params.firstPostprocessing.contains(".txt") || params.firstPostprocessing.contains(".ijm"))) {
 			runPostprocessingMacro(params.firstPostprocessing);
 			map = manageOutputs();
-		} else if (params.firstPostprocessing != null && (params.firstPostprocessing.contains(".jar") || params.firstPostprocessing.contains(".class") || new File(params.firstPostprocessing).isDirectory())) {
-			map = runPostprocessingJava(map, params.firstPostprocessing, params);
 		}
 		
 
 		if (params.secondPostprocessing != null && (params.secondPostprocessing.contains(".txt") || params.secondPostprocessing.contains(".ijm"))) {
 			runPostprocessingMacro(params.firstPreprocessing);
 			map = manageOutputs();
-		} else if (params.secondPostprocessing != null && (params.secondPostprocessing.contains(".jar") || params.secondPostprocessing.contains(".class") || new File(params.secondPostprocessing).isDirectory())) {
-			map = runPostprocessingJava(map, params.secondPostprocessing, params);
 		} else if (params.secondPreprocessing == null && (params.firstPostprocessing == null || params.firstPostprocessing.contains(".jar") || new File(params.firstPostprocessing).isDirectory())) {
 			map = manageOutputs();
 		}
 		return map;
 	}
 	
-	/****************************************+
-	 * Method to run a post-processing routine in Java on the images and table open in
-	 * ImageJ
-	 * @param map: hashmap containing all the images and tables opened in ImageJ with the keys
-	 * being the title of the window
-	 * @param processingPath: path to the java file that specifies the processing
-	 * @return map: hashmap containing the results of the processing routine
-	 * @throws JavaProcessingError 
-	 */
-	private static HashMap<String, Object> runPostprocessingJava(HashMap<String, Object> map, String processingPath, Parameters params) throws JavaProcessingError {
-		boolean preprocessing = false;
-		ExternalClassManager processingRunner = new ExternalClassManager (processingPath, preprocessing, params);
-		map = processingRunner.javaPostprocess(map);
-		return map;
-	}
 
 	/***************************
 	 * Method to run a macro processing routine over the outputs of the model. 
