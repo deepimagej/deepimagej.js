@@ -55,7 +55,6 @@ import deepimagej.tools.FileTools;
 import deepimagej.tools.Index;
 import deepimagej.tools.Log;
 import deepimagej.tools.NumFormat;
-import deepimagej.tools.YAMLUtils;
 import ij.IJ;
 
 public class TensorFlowModel {

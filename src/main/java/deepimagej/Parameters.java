@@ -37,7 +37,6 @@
 
 package deepimagej;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,8 +47,6 @@ import java.util.Map;
 import java.util.Set;
 
 import deepimagej.tools.DijTensor;
-import deepimagej.tools.Index;
-import deepimagej.tools.YAMLUtils;
 import ij.ImagePlus;
 
 public class Parameters {
@@ -223,7 +220,7 @@ public class Parameters {
 		// If the model is not valid or we are in the developer plugin,
 		// we cannot read the parameters from anywhere as there is no
 		// config file
-		Map<String, Object> obj =  YAMLUtils.readConfig(yamlFile);
+		Map<String, Object> obj =  new HashMap<String, Object>();
 
 
 		name = (String) obj.get("name");

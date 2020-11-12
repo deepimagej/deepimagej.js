@@ -337,9 +337,9 @@ public class RunnerTf implements Callable<HashMap<String, Object>> {
 					try {
 						// Call the ImJoyModelRunner from the ImJoy API to run the TF model
 						Global.jsCall("callPlugin", "ImJoyModelRunner", "predict", yaml, patch,  new Promise(){
-			                public void resolve(ImagePlus output){
+			                public void resolve(Object output){
 			                    // do postprocessing here with the output
-			                	outputImages[0] = output;
+			                	outputImages[0] = (ImagePlus) output;
 			                }
 			                public void reject(String error){
 			                    // show the error here

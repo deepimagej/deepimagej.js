@@ -38,35 +38,18 @@
 package deepimagej;
 
 import java.awt.TextArea;
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.springframework.web.client.RestTemplate;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 import deepimagej.tools.Log;
-import deepimagej.tools.YAMLUtils;
 import deepimagej.tools.DijTensor;
-import deepimagej.tools.FileTools;
 import ij.IJ;
-import ij.ImagePlus;
 import ij.gui.GenericDialog;
 
 public class DeepImageJ {
@@ -87,21 +70,18 @@ public class DeepImageJ {
 		return this.valid;
 	}
 	
-	static public HashMap<String, DeepImageJ> list() throws MalformedURLException, IOException, URISyntaxException {
-		HashMap<String, DeepImageJ> dpsMap = new HashMap<String, DeepImageJ>();
-		String github = "https://api.github.com/repos/{owner}/{repo}/contents";
-		dpsMap = getModelsFromGithub(github, dpsMap);
-		return dpsMap;
+	static public DeepImageJ ImjoyYaml2DijYaml(String raw) throws IOException {
+		DeepImageJ dp = new DeepImageJ("");
+		// TODO do stuff
+		return dp;
 	}
-	
+	/*
 	public static HashMap<String, DeepImageJ> getModelsFromGithub(String webUrl, HashMap<String, DeepImageJ> dpsMap) throws MalformedURLException, IOException, URISyntaxException {
 		RestTemplate restTemplate = new RestTemplate();
 		List<Map> response = restTemplate.getForObject(
 				webUrl + "?ref={branch}", List.class, "deepimagej",
 				"models", "master");
- 
-		// To print response JSON, using GSON. Any other JSON parser can be used here.
-		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
  
 		// Iterate through list of file metadata from response.
 		for (Map fileMetaData : response) {
@@ -122,6 +102,7 @@ public class DeepImageJ {
 		}
 		return dpsMap;
 	}
+	*/
 
 	public void writeParameters(TextArea info, ArrayList<String> checks) {
 		if (params == null) {

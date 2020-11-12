@@ -52,6 +52,7 @@ import java.util.List;
 
 import deepimagej.Constants;
 import deepimagej.DeepImageJ;
+import deepimagej.Promise;
 import deepimagej.RunnerTf;
 import deepimagej.RunnerProgress;
 import deepimagej.components.BorderPanel;
@@ -76,6 +77,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import com.leaningtech.client.Global;
+
 
 
 public class DeepImageJ_Run implements PlugIn, ItemListener {
@@ -87,16 +90,18 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 	private Label[]	    				patchLabel	= new Label[4];
 	private Label[]						labels		= new Label[8];
 	static private String				path		= IJ.getDirectory("imagej") + File.separator + "models" + File.separator;
-	private HashMap<String, DeepImageJ>	dps;
+	//private HashMap<String, DeepImageJ>	dps;
 	private String[]					processingFile = new String[2];
 	private Log							log			= new Log();
 	private int[]						patch;
-	private DeepImageJ					dp;
-	private HashMap<String, String>		fullnames	= new HashMap<String, String>();
+	private DeepImageJ					dp			= null;
+	//private HashMap<String, String>		fullnames	= new HashMap<String, String>();
 	
 	private String						patchString = "Patch size [pixels]: ";
 
 	private boolean 					batch		= true;
+	private String						rawYaml 	= "";
+	private String[]					modelList;
 	
 	static public void main(String args[]) {
 		path = System.getProperty("user.home") + File.separator + "Google Drive" + File.separator + "ImageJ" + File.separator + "models" + File.separator;
@@ -112,29 +117,14 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 	public void run(String arg) {
 
 		ImagePlus imp = WindowManager.getTempCurrentImage();
+		imp = IJ.createImage("aux", 64, 64, 1, 8);
+		
 		
 		if (imp == null) {
 			batch = false;
 			imp = WindowManager.getCurrentImage();
 		}
-			
 		
-
-		try {
-			dps = DeepImageJ.list();
-		} catch (IOException | URISyntaxException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		if (dps.size() == 0) {
-			path = path.replace(File.separator + File.separator, File.separator);
-			boolean goToPage = IJ.showMessageWithCancel("no models","No available models in " + path +
-					".\nPress \"Ok\" and you will be redirected to the deepImageJ models directory.");
-			if (goToPage == true) {
-				WebBrowser.openDeepImageJ();
-			}
-			return;
-		}
 		info.setEditable(false);
 
 		BorderPanel panel = new BorderPanel();
@@ -142,18 +132,21 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 		panel.add(info, BorderLayout.CENTER);
 
 		GenericDialog dlg = new GenericDialog("DeepImageJ Run [" + Constants.version + "]");
-		String[] items = new String[dps.size() + 1];
+		
+		// return a list of names (string)
+		Global.jsCall("callPlugin", "ImJoyModelRunner", "getModelList", new Promise(){
+					public void resolve(Object result){
+						modelList = (String[]) result;
+					}
+					public void reject(String error){
+						IJ.error("Cannot fetch list of models from Bioimage Model Zoo");
+					}
+				});
+		String[] items = new String[modelList.length + 1];
 		items[0] = "<select a model from this list>";
-		int k = 1;
-		for (String dirname : dps.keySet()) {
-			DeepImageJ dp = dps.get(dirname);
-			if (dp != null) {
-				String fullname = dp.params.name;
-				items[k++] = fullname;
-				int index = k - 1;
-				fullnames.put(Integer.toString(index), dirname);
-			}
-		}
+		
+		for (int i = 0; i < modelList.length; i++)
+			items[i + 1] = modelList[i];
 
 		dlg.addChoice("Model DeepImageJ", items, items[0]);
 		dlg.addChoice("Model version", new String[] {"------------Select version------------"}, "------------Select version------------");
@@ -224,10 +217,14 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 			IJ.error("Select a valid model.");
 		}
 
-		String dirname = fullnames.get(index);
+		if (dp == null) {
+			IJ.error("No model selected");
+			return;
+		}
 		
-		log.print("Load model: " + fullname + "(" + dirname + ")");
-		dp = dps.get(dirname);
+		String modelName = dp.params.name;
+		
+		log.print("Load model: " + modelName);
 		
 		String version = dlg.getNextChoice();
 		
@@ -322,7 +319,6 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 		
 		// Free memory allocated by the plugin 
 		this.dp = null;
-		this.dps = null;
 		imp = null;
 		try {
 			this.finalize();
@@ -333,7 +329,6 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 		}
 		System.gc();
 		this.dp = null;
-		this.dps = null;
 		imp = null;
 		try {
 			this.finalize();
@@ -349,10 +344,23 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 	public void itemStateChanged(ItemEvent e) {
 		if (e.getSource() == choices[0]) {
 			info.setText("");
-			String fullname = Integer.toString(choices[0].getSelectedIndex());
-			String dirname = fullnames.get(fullname);
+			String modelName = choices[0].getSelectedItem().trim();
 
-			DeepImageJ dp = dps.get(dirname);
+			DeepImageJ dp = null;
+			rawYaml = "";
+			Global.jsCall("callPlugin", "ImJoyModelRunner", "getModelInfo", modelName,  new Promise(){
+				public void resolve(Object yamlString){			
+					rawYaml = (String) yamlString;
+				}
+				public void reject(String error){
+					IJ.error("Unable to fetch the model yaml from the Bioimage Zoo");
+				}
+			});
+			try {
+				dp = DeepImageJ.ImjoyYaml2DijYaml(rawYaml);
+			} catch (IOException e1) {
+				IJ.error("Unable to fetch the model yaml from the Bioimage Zoo");
+			}
 			if (dp == null) {
 				info.setCaretPosition(0);
 				info.append("<Please select a model>\n");
