@@ -43,12 +43,15 @@ import java.awt.TextArea;
 import java.awt.TextField;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.awt.EventQueue;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.lang.Runnable;
+import java.lang.Thread;
 
 import deepimagej.Constants;
 import deepimagej.DeepImageJ;
@@ -102,6 +105,7 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 	private boolean 					batch		= true;
 	private String						rawYaml 	= "";
 	private String[]					modelList;
+	private static boolean modelsDone = false;
 	
 	static public void main(String args[]) {
 		path = System.getProperty("user.home") + File.separator + "Google Drive" + File.separator + "ImageJ" + File.separator + "models" + File.separator;
@@ -133,17 +137,39 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 
 		GenericDialog dlg = new GenericDialog("DeepImageJ Run [" + Constants.version + "]");
 		
+		modelsDone = false;
 		// return a list of names (string)
 		Global.jsCall("callPlugin", "ImJoyModelRunner", "getModels", new Promise(){
-					public void resolveString(String result){
-						modelList = result.split(",");
+			public void resolveString(String result){
+				modelList = result.split(",");
+				System.out.println("model list" + result);
+				modelsDone =true;
+			}
+			public void resolveImagePlus(ImagePlus result){
+				modelsDone =true;
+			}
+			public void reject(String error){
+				IJ.error("Cannot fetch list of models from Bioimage Model Zoo, error: "+error);
+				modelsDone =true;
+			}
+		});
+		try {
+			// block execution until we get the file path from js
+			EventQueue.invokeAndWait(new Runnable() {
+				public void run() {
+					while(!modelsDone){
+						try {
+							Thread.sleep(500);
+						} catch (Exception e) {
+							System.out.println(e.toString());
+							break;
+						}
 					}
-					public void resolveImagePlus(ImagePlus result){
-					}
-					public void reject(String error){
-						IJ.error("Cannot fetch list of models from Bioimage Model Zoo, error: "+error);
-					}
-				});
+				}
+			});
+		} catch (Exception e) {
+			System.out.println(e.toString());
+		}
 		String[] items = new String[modelList.length + 1];
 		items[0] = "<select a model from this list>";
 		
@@ -349,17 +375,37 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 			String modelName = choices[0].getSelectedItem().trim();
 
 			DeepImageJ dp = null;
-			rawYaml = "";
+			rawYaml = null;
 			Global.jsCall("callPlugin", "ImJoyModelRunner", "getModelInfo", modelName,  new Promise(){
 				public void resolveString(String result){
 					rawYaml = result;
 				}
 				public void resolveImagePlus(ImagePlus result){
+					rawYaml = "";
 				}
 				public void reject(String error){
 					IJ.error("Unable to fetch the model yaml from the Bioimage Zoo, error:" + error);
+					rawYaml = "";
 				}
 			});
+			try {
+				// block execution until we get the file path from js
+				EventQueue.invokeAndWait(new Runnable() {
+					public void run() {
+						while(rawYaml!=null){
+							try {
+								Thread.sleep(500);
+							} catch (Exception e) {
+								System.out.println(e.toString());
+								break;
+							}
+						}
+					}
+				});
+			} catch (Exception err) {
+				System.out.println(err.toString());
+			}
+
 			try {
 				dp = DeepImageJ.ImjoyYaml2DijYaml(rawYaml);
 			} catch (IOException e1) {
