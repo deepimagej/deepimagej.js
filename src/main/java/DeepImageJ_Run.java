@@ -373,12 +373,91 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 		if (e.getSource() == choices[0]) {
 			info.setText("");
 			String modelName = choices[0].getSelectedItem().trim();
-
-			DeepImageJ dp = null;
 			rawYaml = null;
 			Global.jsCall("callPlugin", "ImJoyModelRunner", "getModelInfo", modelName,  new Promise(){
 				public void resolveString(String result){
 					rawYaml = result;
+					System.out.println(rawYaml);
+					DeepImageJ dp = null;
+					try {
+						dp = DeepImageJ.ImjoyYaml2DijYaml(rawYaml);
+					} catch (IOException e1) {
+						IJ.error("Unable to fetch the model yaml from the Bioimage Zoo");
+					}
+					if (dp == null) {
+						info.setCaretPosition(0);
+						info.append("<Please select a model>\n");
+						choices[2].removeAll();
+						choices[2].addItem("no preprocessing");
+						choices[3].removeAll();
+						choices[3].addItem("no postprocessing");
+						labels[4].setText("Minimum size for each patch: ");
+						labels[5].setText("Step: ");
+						return;
+					}
+
+					info.setCaretPosition(0);
+					info.append("Loading model info. Please wait...\n");
+					
+
+					info.setText("");
+					info.setCaretPosition(0);
+					dp.writeParameters(info, dp.msgChecks);
+					info.append("----------- LOAD INFO ------------\n");
+					for (String msg : dp.msgLoads)
+						info.append(msg + "\n");
+					
+					// Get basic information about the input from the yaml
+					String tensorForm = dp.params.inputList.get(0).form;
+					// Patch size if the input size is fixed, all 0s if it is not
+					int[] tensorPatch = dp.params.inputList.get(0).recommended_patch;
+					// Minimum size if it is not fixed, 0s if it is
+					int[] tensorMin = dp.params.inputList.get(0).minimum_size;
+					// Step if the size is not fixed, 0s if it is
+					int[] tensorStep = dp.params.inputList.get(0).step;
+					int[] haloSize = findTotalPadding(dp.params.inputList.get(0), dp.params.outputList, dp.params.pyramidalNetwork);
+					int[] dimValue = DijTensor.getWorkingDimValues(tensorForm, tensorPatch); 
+					int[] min = DijTensor.getWorkingDimValues(tensorForm, tensorMin); 
+					int[] step = DijTensor.getWorkingDimValues(tensorForm, tensorStep); 
+					int[] haloVals = DijTensor.getWorkingDimValues(tensorForm, haloSize); 
+					String[] dim = DijTensor.getWorkingDims(tensorForm);
+					
+					
+					if (Arrays.equals(tensorStep, new int[tensorStep.length])) {
+						labels[4].setText("The patch size was fixed by the developer.");
+						labels[5].setText("");
+					} else {
+						String minSize = "Minimum size for each dimension: ";
+						String stepSize = "Step for each dimension: ";
+						for (int i = 0; i < dim.length; i ++) {
+							String val = "" + min[i];
+							String s = "" + step[i];
+							if (step[i] == 0) {s = "fixed";}
+							minSize = minSize + dim[i] + ":" + val + " ";
+							stepSize = stepSize + dim[i] + ":" + s + " ";
+						}
+						labels[4].setText(minSize);
+						labels[5].setText(stepSize);
+					}
+					// Hide all the labels to show only the necessary ones
+					for (int i = 0; i < patchLabel.length; i ++) {
+						patchLabel[i].setVisible(false);
+						
+						patchSize[i].setVisible(false);
+						patchSize[i].setEditable(true);
+						patchSize[i].setEnabled(true);
+						
+					}
+					for (int i = 0; i < dim.length; i ++) {
+						patchLabel[i].setVisible(true);
+						patchSize[i].setVisible(true);
+						patchLabel[i].setText(dim[i]);
+						// Set the corresponding value and set whether the
+						// text fields are editable or not
+						patchSize[i].setText(optimalPatch(dimValue[i], haloVals[i], dim[i], step[i], min[i]));
+						patchSize[i].setEditable(step[i] != 0 && dp.params.allowPatching);
+						patchSize[i].setEnabled(step[i] != 0 && dp.params.allowPatching);
+					}
 				}
 				public void resolveImagePlus(ImagePlus result){
 					rawYaml = "";
@@ -388,103 +467,6 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 					rawYaml = "";
 				}
 			});
-			try {
-				// block execution until we get the file path from js
-				EventQueue.invokeAndWait(new Runnable() {
-					public void run() {
-						while(rawYaml!=null){
-							try {
-								Thread.sleep(500);
-							} catch (Exception e) {
-								System.out.println(e.toString());
-								break;
-							}
-						}
-					}
-				});
-			} catch (Exception err) {
-				System.out.println(err.toString());
-			}
-
-			try {
-				dp = DeepImageJ.ImjoyYaml2DijYaml(rawYaml);
-			} catch (IOException e1) {
-				IJ.error("Unable to fetch the model yaml from the Bioimage Zoo");
-			}
-			if (dp == null) {
-				info.setCaretPosition(0);
-				info.append("<Please select a model>\n");
-				choices[2].removeAll();
-				choices[2].addItem("no preprocessing");
-				choices[3].removeAll();
-				choices[3].addItem("no postprocessing");
-				labels[4].setText("Minimum size for each patch: ");
-				labels[5].setText("Step: ");
-				return;
-			}
-
-			info.setCaretPosition(0);
-			info.append("Loading model info. Please wait...\n");
-			
-
-			info.setText("");
-			info.setCaretPosition(0);
-			dp.writeParameters(info, dp.msgChecks);
-			info.append("----------- LOAD INFO ------------\n");
-			for (String msg : dp.msgLoads)
-				info.append(msg + "\n");
-			
-			// Get basic information about the input from the yaml
-			String tensorForm = dp.params.inputList.get(0).form;
-			// Patch size if the input size is fixed, all 0s if it is not
-			int[] tensorPatch = dp.params.inputList.get(0).recommended_patch;
-			// Minimum size if it is not fixed, 0s if it is
-			int[] tensorMin = dp.params.inputList.get(0).minimum_size;
-			// Step if the size is not fixed, 0s if it is
-			int[] tensorStep = dp.params.inputList.get(0).step;
-			int[] haloSize = findTotalPadding(dp.params.inputList.get(0), dp.params.outputList, dp.params.pyramidalNetwork);
-			int[] dimValue = DijTensor.getWorkingDimValues(tensorForm, tensorPatch); 
-			int[] min = DijTensor.getWorkingDimValues(tensorForm, tensorMin); 
-			int[] step = DijTensor.getWorkingDimValues(tensorForm, tensorStep); 
-			int[] haloVals = DijTensor.getWorkingDimValues(tensorForm, haloSize); 
-			String[] dim = DijTensor.getWorkingDims(tensorForm);
-			
-			
-			if (Arrays.equals(tensorStep, new int[tensorStep.length])) {
-				labels[4].setText("The patch size was fixed by the developer.");
-				labels[5].setText("");
-			} else {
-				String minSize = "Minimum size for each dimension: ";
-				String stepSize = "Step for each dimension: ";
-				for (int i = 0; i < dim.length; i ++) {
-					String val = "" + min[i];
-					String s = "" + step[i];
-					if (step[i] == 0) {s = "fixed";}
-					minSize = minSize + dim[i] + ":" + val + " ";
-					stepSize = stepSize + dim[i] + ":" + s + " ";
-				}
-				labels[4].setText(minSize);
-				labels[5].setText(stepSize);
-			}
-			// Hide all the labels to show only the necessary ones
-			for (int i = 0; i < patchLabel.length; i ++) {
-				patchLabel[i].setVisible(false);
-				
-				patchSize[i].setVisible(false);
-				patchSize[i].setEditable(true);
-				patchSize[i].setEnabled(true);
-				
-			}
-			for (int i = 0; i < dim.length; i ++) {
-				patchLabel[i].setVisible(true);
-				patchSize[i].setVisible(true);
-				patchLabel[i].setText(dim[i]);
-				// Set the corresponding value and set whether the
-				// text fields are editable or not
-				patchSize[i].setText(optimalPatch(dimValue[i], haloVals[i], dim[i], step[i], min[i]));
-				patchSize[i].setEditable(step[i] != 0 && dp.params.allowPatching);
-				patchSize[i].setEnabled(step[i] != 0 && dp.params.allowPatching);
-			}
 		}
 	}
 
