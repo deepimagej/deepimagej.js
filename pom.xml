@@ -165,13 +165,11 @@ Universidad Carlos III de Madrid.</license.copyrightOwners>
 			<artifactId>commons-io</artifactId>
 			<version>2.6</version>
 		</dependency>
-		
-		<!-- Test scope dependencies -->
 		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<scope>test</scope>
+			<groupId>com.learningtech</groupId>
+			<artifactId>cheerpj-dom</artifactId>
+			<version>1.0</version>
 		</dependency>
-		<!-- Test scope dependencies -->
+		
 	</dependencies>
 </project>
