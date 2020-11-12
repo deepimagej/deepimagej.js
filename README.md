@@ -1,1 +1,1 @@
-# deepimagej.JS
+# DeepImageJ plugin for [ImageJ.JS](https://ij.imjoy.io)
