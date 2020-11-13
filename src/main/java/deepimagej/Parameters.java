@@ -37,13 +37,10 @@
 
 package deepimagej;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import deepimagej.tools.DijTensor;
@@ -138,6 +135,9 @@ public class Parameters {
 	public String		name					= "";
 	public List<String>	author					= new ArrayList<String>();
 	public String		version					= "";
+	public String		format_version			= "";
+	public String		date					= "";
+	public String		git_repo				= "";
 	/*
 	 * Citation: contains the reference articles and the corresponding dois used
 	 * to create the model
@@ -214,317 +214,389 @@ public class Parameters {
 	 */
 	public String selectedModelPath;
 	
+	/* TODO remove
+	public static void main(String[] args) {
+		String raw = "format_version: 0.3.0\r\n" + 
+				"name: DEFCoN density map estimation\r\n" + 
+				"description: Density Estimation by Fully Convolutional Networks (DEFCoN) - A fluorescent spot counter for single molecule localization microscopy.\r\n" + 
+				"date: 2019\r\n" + 
+				"cite:\r\n" + 
+				"  - text: DEFCoN was written by Baptiste Ottino as a Master's thesis project under the guidance of Kyle M. Douglass and Suliana Manley in the Laboratory of Experimental Biophysics.\r\n" + 
+				"authors:\r\n" + 
+				"  - Baptiste Ottino\r\n" + 
+				"  - Kyle M. Douglass\r\n" + 
+				"  - Suliana Manley\r\n" + 
+				"documentation: https://github.com/LEB-EPFL/DEFCoN-ImageJ/wiki.\r\n" + 
+				"covers: [./cover_image.jpg]\r\n" + 
+				"tags:\r\n" + 
+				"  - deepimagej\r\n" + 
+				"  - smlm\r\n" + 
+				"  - defcon\r\n" + 
+				"  - density estimation\r\n" + 
+				"license: BSD 3\r\n" + 
+				"language: Java\r\n" + 
+				"framework: Tensorflow\r\n" + 
+				"git_repo: https://github.com/LEB-EPFL/DEFCoN\r\n" + 
+				"weights:\r\n" + 
+				"  tensorflow_protobuffer:\r\n" + 
+				"    name: v1\r\n" + 
+				"    source: https://zenodo.org/record/4244821/files/defcon_density_map_estimation_tf_model.zip?download=1\r\n" + 
+				"    sha256: ea57590caefa41a493808420d5bc029d7b6c8ad8b1633d8feeb166a99d71f45d\r\n" + 
+				"    test_input:\r\n" + 
+				"      - ./exampleImage.tiff\r\n" + 
+				"    test_output:\r\n" + 
+				"      - ./resultImage.tiff\r\n" + 
+				"inputs:\r\n" + 
+				"  - name: raw\r\n" + 
+				"    axes: byxc\r\n" + 
+				"    data_type: float32\r\n" + 
+				"    data_range: [-inf, inf]\r\n" + 
+				"    shape:\r\n" + 
+				"      min: [1, 1, 1, 1]\r\n" + 
+				"      step: [0, 1, 1, 0]\r\n" + 
+				"    preprocessing:\r\n" + 
+				"      name: min_max_normalization\r\n" + 
+				"      kwargs:\r\n" + 
+				"        mode: fixed\r\n" + 
+				"        axes: xy\r\n" + 
+				"        min: 0.0\r\n" + 
+				"        max: 65535.0\r\n" + 
+				"outputs:\r\n" + 
+				"  - name: segmentation\r\n" + 
+				"    axes: byxc\r\n" + 
+				"    data_type: float32\r\n" + 
+				"    data_range: [0, 1]\r\n" + 
+				"    halo: [0, 10, 10, 0]\r\n" + 
+				"    shape:\r\n" + 
+				"      reference_input: raw\r\n" + 
+				"      scale: [1, 1, 1, 1]\r\n" + 
+				"      offset: [0, 0, 0, 0]\r\n" + 
+				"config:\r\n" + 
+				"# custom config for DeepImageJ, see https://github.com/bioimage-io/configuration/issues/23\r\n" + 
+				"  deepimagej:\r\n" + 
+				"    pyramidal_model: false\r\n" + 
+				"    allow_tiling: true\r\n" + 
+				"    model_keys:\r\n" + 
+				"      model_tag: tf.saved_model.tag_constants.SERVING\r\n" + 
+				"      signature_definition: tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY\r\n" + 
+				"    test_information:\r\n" + 
+				"      inputs:\r\n" + 
+				"        - name: exampleImage.tiff\r\n" + 
+				"          size: 64 x 64 x 1 x 1\r\n" + 
+				"          pixel_size:\r\n" + 
+				"            x: 1 pixel\r\n" + 
+				"            y: 1 pixel\r\n" + 
+				"            z: 1.0 pixel\r\n" + 
+				"      outputs:\r\n" + 
+				"        - name: resultImage.tiff\r\n" + 
+				"          type: image\r\n" + 
+				"          size: 64 x 64 x 1 x 1\r\n" + 
+				"      memory_peak: 62.9 Mb\r\n" + 
+				"      runtime: 0.1 s\r\n" + 
+				"    prediction:\r\n" + 
+				"      preprocess:\r\n" + 
+				"      -   spec: ij.IJ::runMacroFile\r\n" + 
+				"          kwargs: preprocessing.txt\r\n" + 
+				"      postprocess:\r\n" + 
+				"      -   spec: ij.IJ::runMacroFile\r\n" + 
+				"          kwargs: postprocessing.txt";
+		System.out.print(raw);
+		new Parameters(raw);
+	}*/
 	
 	
-	public Parameters(String yamlFile) throws IOException {
-		// If the model is not valid or we are in the developer plugin,
-		// we cannot read the parameters from anywhere as there is no
-		// config file
-		name = "exampleModel";
-		inputList 	= new ArrayList<>();
-		outputList 	= new ArrayList<>();
-		DijTensor inp = new DijTensor("input");
-		inp.form = "byxc";
-		inp.step = new int[]{0,1,1,0};
-		inp.minimum_size = new int[]{1,1,1,1};
-		DijTensor out = new DijTensor("output");
-		out.halo = new int[]{1,1,1,1};
-		inp.recommended_patch = new int[]{1,64,64,1};
-		inputList.add(inp);
-		outputList.add(out);
+	
+	public Parameters(String rawYaml) {
+		// Parse the yaml fields from the raw Yaml written in 
+		// string format
 		pyramidalNetwork = false;
 		allowPatching = true;
-		completeConfig = true;
 		fixedInput = false;
-		/*
-		Map<String, Object> obj =  new HashMap<String, Object>();
-
-
-		name = (String) obj.get("name");
-		description = (String) obj.get("description");
-		author = (List<String>) obj.get("authors");
-		if (author == null) {
-			author = new ArrayList<String>();
-			author.add("n/a");
+		completeConfig = true;
+		while (rawYaml.contains("\n")) {
+			int lineEnd = rawYaml.indexOf("\n");
+			String line = rawYaml.substring(0, lineEnd);
+			int fieldEnd = line.indexOf(":");
+			String field = fieldEnd != - 1 ? line.substring(0, fieldEnd) : "";
+			boolean reduceStr = true;
+			switch (field) {
+				case "format_version":
+					format_version = line.substring(fieldEnd + 1).trim();
+					break;
+				case "name":
+					name = line.substring(fieldEnd + 1).trim();
+					break;
+				case "description":
+					description = line.substring(fieldEnd + 1).trim();
+					break;
+				case "date":
+					date = line.substring(fieldEnd + 1).trim();
+					break;
+				case "cite":
+					cite = new ArrayList<HashMap<String, String>>();
+					rawYaml = rawYaml.substring(lineEnd + 1);
+					rawYaml = getYamlCitation(rawYaml);
+					reduceStr = false;
+					break;
+				case "authors":
+					author = new ArrayList<String>();
+					rawYaml = rawYaml.substring(lineEnd + 1);
+					rawYaml = getYamlEnum(rawYaml, author);
+					reduceStr = false;
+					break;
+				case "documentation":
+					documentation = line.substring(fieldEnd + 1).trim();
+					break;
+				case "covers":
+					break;
+				case "tags":
+					infoTags = new ArrayList<String>();
+					rawYaml = rawYaml.substring(lineEnd + 1);
+					rawYaml = getYamlEnum(rawYaml, infoTags);
+					reduceStr = false;
+					break;
+				case "license":
+					license = line.substring(fieldEnd + 1).trim();
+					break;
+				case "language":
+					language = line.substring(fieldEnd + 1).trim();
+					break;
+				case "framework":
+					framework = line.substring(fieldEnd + 1).trim();
+					break;
+				case "git_repo":
+					git_repo = line.substring(fieldEnd + 1).trim();
+					break;
+				case "weights":
+					path2Model = "";
+					rawYaml = rawYaml.substring(lineEnd + 1);
+					rawYaml = getYamlModel(rawYaml);
+					reduceStr = false;
+					break;
+				case "inputs":
+					inputList = new ArrayList<DijTensor>();
+					rawYaml = rawYaml.substring(lineEnd + 1);
+					rawYaml = getYamlInputs(rawYaml);
+					reduceStr = false;
+					break;
+				case "outputs":
+					outputList = new ArrayList<DijTensor>();
+					rawYaml = rawYaml.substring(lineEnd + 1);
+					rawYaml = getYamlOutputs(rawYaml);
+					reduceStr = false;
+					break;
+				case "config":
+					break;
+			}
+			if (reduceStr)
+				rawYaml = rawYaml.substring(lineEnd + 1);
 		}
-
-		// Citation
-		cite = (List<HashMap<String, String>>) obj.get("cite");
-		if (cite == null) {
-			cite = new ArrayList<HashMap<String, String>>();
-			HashMap<String, String> c = new HashMap<String, String>();
-			c.put("text", "");
-			c.put("doi", "");
-			cite.add(c);
-		}
-		
-		documentation = (String) obj.get("documentation");
-		// TODO do we need cover?
-		//String cover = (String) obj.get("cover");
-		license = (String) obj.get("license");
-		version = "" + obj.get("format_version");
-		framework = (String) obj.get("framework");
-		language = (String) obj.get("language");
-		
-		// Model metadata
-		Map<String, Object> config = (Map<String, Object>) obj.get("config");
-		Map<String, Object> deepimagej = (Map<String, Object>) config.get("deepimagej");
-		pyramidalNetwork = (boolean) deepimagej.get("pyramidal_model");
-		allowPatching = (boolean) deepimagej.get("allow_tiling");
-		// Model keys
-		if (framework.contains("Tensorflow")) {
-			Map<String, Object> model_keys = (Map<String, Object>) deepimagej.get("model_keys");
-			tag = (String) model_keys.get("tensorflow_model_tag");
-			graph = (String) model_keys.get("tensorflow_siganture_def");
-		}
+	}
+	
+	private String getYamlOutputs(String rawYaml) {
+		int lineEnd;
+		String txtLine;
+		DijTensor output = null;
+		while (rawYaml.trim().indexOf("config:") != 0) {
+			// Get line
+			lineEnd = rawYaml.indexOf("\n");
+			txtLine = rawYaml.substring(1, lineEnd).trim();
+			int contentStarts = txtLine.indexOf(":");
+			rawYaml = rawYaml.substring(lineEnd + 1);
+			if (txtLine.indexOf("-") == 0 && output != null) {
+				outputList.add(output);
+			} else if (txtLine.indexOf("-") == 0) {
+				int endInd = txtLine.indexOf(":");
+				String name = txtLine.substring(contentStarts, endInd).trim();
+				output = new DijTensor(name);
+			} else if (txtLine.indexOf("axes") == 0) {
+				output.form = txtLine.substring(contentStarts + 1).trim();
+			} else if (txtLine.indexOf("halo") == 0) {
+				int startInd = txtLine.indexOf("[");
+				int endInd = txtLine.indexOf("]");
+				String[] line = txtLine.substring(startInd + 1, endInd).split(",");
+				output.halo = new int[line.length];
+				for (int i = 0; i < line.length; i ++)
+					output.halo[i] = Integer.parseInt(line[i].trim());
+			} else if (txtLine.indexOf("shape") == 0 && txtLine.equals("shape:")) {
+				lineEnd = rawYaml.indexOf("\n");
+				txtLine = rawYaml.substring(1, lineEnd).trim();
+				rawYaml = rawYaml.substring(lineEnd + 1);
+				int startInd = txtLine.indexOf(":");
+				output.referenceImage = txtLine.substring(startInd + 1).trim();
 				
-		
-		List<Map<String, Object>> inputs = (List<Map<String, Object>>) obj.get("inputs");
-		// Check that the previous version field is complete
-		if (inputs == null) {
-			completeConfig = false;
-			return;
-		}
-		inputList = new ArrayList<DijTensor>();
-		
-		Map<String, Object> test_information = (Map<String, Object>) deepimagej.get("test_information");
-		List<LinkedHashMap<String, Object>> input_information = (List<LinkedHashMap<String, Object>>) test_information.get("inputs");
-		int tensorCounter = 0;
-		
-		for (Map<String, Object> inp : inputs) {
-			DijTensor inpTensor = new DijTensor((String) inp.get("name"));
-			inpTensor.form = ((String) inp.get("axes")).toUpperCase();
-			inpTensor.dataType = (String) inp.get("data_type");
-			//TODO do we assume inputs in the yaml are always images?
-			inpTensor.tensorType = "image";
-			List<Object> auxDataRange = (ArrayList<Object>) inp.get("data_range");
-			//TODO inpTensor.dataRange = castListToDoubleArray(auxDataRange);
-			
-			// Find by trial and error if the shape of the input is fixed or not
-			try {
-				List<Object> shape = (ArrayList<Object>) inp.get("shape");
-				inpTensor.recommended_patch = castListToIntArray(shape);
-				inpTensor.tensor_shape = inpTensor.recommended_patch;
-				inpTensor.minimum_size = castListToIntArray(shape);
-				inpTensor.step = new int[shape.size()];
-				fixedInput = true;
-			} catch (Exception ex) {
-				Map<String, Object> shape = (Map<String, Object>) inp.get("shape");
-				List auxMinimumSize = (List) shape.get("min");
-				inpTensor.minimum_size = castListToIntArray(auxMinimumSize);
-				List auxStepSize = (List) shape.get("step");
-				inpTensor.step = castListToIntArray(auxStepSize);
-				inpTensor.recommended_patch = new int[auxStepSize.size()];
-				inpTensor.tensor_shape = new int[auxStepSize.size()];
-				// Recreate the tensor shape of the model with the information
-				// of the YAML
-				for (int i = 0; i < inpTensor.step.length; i ++) {
-					if (inpTensor.step[i] == 0) {
-						inpTensor.tensor_shape[i] = inpTensor.minimum_size[i];
-					} else {
-						inpTensor.tensor_shape[i] = -1;
-					}
-				}
-				fixedInput = false;
+				lineEnd = rawYaml.indexOf("\n");
+				txtLine = rawYaml.substring(1, lineEnd).trim();
+				rawYaml = rawYaml.substring(lineEnd + 1);
+				startInd = txtLine.indexOf("[");
+				int endInd = txtLine.indexOf("]");
+				String[] line = txtLine.substring(startInd + 1, endInd).split(",");
+				output.scale = new float[line.length];
+				for (int i = 0; i < line.length; i ++)
+					output.scale[i] = Float.parseFloat(line[i].trim());
+				lineEnd = rawYaml.indexOf("\n");
+				txtLine = rawYaml.substring(1, lineEnd).trim();
+				rawYaml = rawYaml.substring(lineEnd + 1);
+				startInd = txtLine.indexOf("[");
+				endInd = txtLine.indexOf("]");
+				line = txtLine.substring(startInd + 1, endInd).split(",");
+				output.offset = new int[line.length];
+				for (int i = 0; i < line.length; i ++)
+					output.offset[i] = Integer.parseInt(line[i].trim());
+			} else if (txtLine.indexOf("shape") == 0 && !txtLine.equals("shape:")) {
+				int startInd = txtLine.indexOf("[");
+				int endInd = txtLine.indexOf("]");
+				String[] line = txtLine.substring(startInd + 1, endInd).split(",");
+				output.recommended_patch = new int[line.length];
+				for (int i = 0; i < line.length; i ++)
+					output.recommended_patch[i] = Integer.parseInt(line[i].trim());
+				output.offset = new int[output.recommended_patch.length];
+				output.scale = new float[output.recommended_patch.length];
 			}
-
-			// Check that the output definition fields are complete
-			if (inpTensor.form == null || inpTensor.dataType == null || inpTensor.minimum_size == null
-					|| inpTensor.tensor_shape == null || inpTensor.step == null || inpTensor.recommended_patch == null) {
-				completeConfig = false;
-				return;
-			}
-			
-			// Now find the test information of this tensor
-			LinkedHashMap<String, Object> info = input_information.get(tensorCounter ++);
-			inpTensor.exampleInput = (String) info.get("name");
-			inpTensor.inputTestSize =  (String) info.get("size");
-			Map<String, String>  pixel_size =  (Map<String, String>) info.get("pixel_size");
-			inpTensor.inputPixelSizeX = (String) pixel_size.get("x");
-			inpTensor.inputPixelSizeY = (String) pixel_size.get("y");
-			inpTensor.inputPixelSizeZ = (String) pixel_size.get("z");
-			
-			inputList.add(inpTensor);
 		}
-
-		List<Map<String, Object>> outputs = (List<Map<String, Object>>) obj.get("outputs");
-		// Check that the previous version field is complete
-		if (outputs == null) {
-			completeConfig = false;
-			return;
-		}
-		outputList = new ArrayList<DijTensor>();
-		
-		for (Map<String, Object> out : outputs) {
-			DijTensor outTensor = new DijTensor((String) out.get("name"));
-			outTensor.form = (String) out.get("axes");
-			outTensor.form = outTensor.form == null ? null : outTensor.form.toUpperCase();
-			outTensor.tensorType = outTensor.form == null ? "list" : "image";
-			List auxDataRange = (List) out.get("data_range");
-			// TODO outTensor.dataRange = castListToDoubleArray(auxDataRange);
-			outTensor.dataType = (String) out.get("data_type");
-			if (outTensor.tensorType.contains("image") && !pyramidalNetwork) {
-				List auxHalo = (List) out.get("halo");
-				outTensor.halo = castListToIntArray(auxHalo);
-			} else if (outTensor.tensorType.contains("image")) {
-				outTensor.halo = new int[outTensor.form.length()];
-			}
-			
-
-			// Find by trial and error if the shape of the input is fixed or not
-			try {
-				List<Object> shape = (ArrayList<Object>) out.get("shape");
-				outTensor.recommended_patch = castListToIntArray(shape);
-				outTensor.scale = new float[shape.size()];
-				outTensor.offset = new int[shape.size()];
-			} catch (Exception ex) {
-				Map<String, Object> shape = (Map<String, Object>) out.get("shape");
-				outTensor.referenceImage = (String) shape.get("reference_input");
-				List auxScale = (List) shape.get("scale");
-				outTensor.scale = castListToFloatArray(auxScale);
-				List auxOffset = (List) shape.get("offset");
-				outTensor.offset = castListToIntArray(auxOffset);
-			}		
-
-			// Check that the output definition fields are complete
-			if (outTensor.form == null || outTensor.dataType == null || outTensor.scale == null
-					|| outTensor.offset == null) {
-				completeConfig = false;
-				return;
-			}
-			
-			outputList.add(outTensor);
-		}
-		// Output test information
-		List<LinkedHashMap<String, Object>> output_information = (List<LinkedHashMap<String, Object>>) test_information.get("outputs");
-		savedOutputs = new ArrayList<HashMap<String, String>>();
-		for (LinkedHashMap<String, Object> out : output_information) {
-			HashMap<String, String> info = new LinkedHashMap<String, String>();
-			String outName =  (String) out.get("name");
-			info.put("name", outName);
-			String size =  (String) out.get("size");
-			info.put("size", size);
-			String type = (String) out.get("type");
-			info.put("type", type);
-
-			savedOutputs.add(info);
-		}
-		
-		// Info about runtime and memory
-		memoryPeak = (String) test_information.get("memory_peak");
-		runtime = (String) test_information.get("runtime");
-
-		
-		// Get all the preprocessings available in the Yaml
-		Map<String, Object> prediction = (Map<String, Object>) deepimagej.get("prediction");
-		pre = new HashMap<String, String[]>();
-		post = new HashMap<String, String[]>();
-		Set<String> keys = prediction.keySet();
-		for (String key : keys) {
-			if (key.contains("preprocess")) {
-				List<Map<String, String>> preprocess = (List<Map<String, String>>) prediction.get(key);
-				// TODO convert into a list of processings
-				String[] commands = new String[preprocess.size()];
-				int processingCount = 0;
-				for (Map<String, String> processing : preprocess) {
-					String spec = processing.get("spec");
-					if (spec != null && processing.containsKey("kwargs")) {
-						commands[processingCount] = processing.get("kwargs");
-					} else if (spec != null && !processing.containsKey("kwargs") && spec.contains(".jar")) {
-						int extensionPosition = spec.indexOf(".jar");
-						commands[processingCount] = spec.substring(0, extensionPosition + 4);
-					} else if (spec != null && !processing.containsKey("kwargs") && spec.contains(".class")) {
-						int extensionPosition = spec.indexOf(".class");
-						commands[processingCount] = spec.substring(0, extensionPosition + 6);
-					} else if (spec == null) {
-						commands = null;
-					}
-					
-					processingCount ++;
-				}
-				pre.put(key, commands);
-			}
-			if (key.contains("postprocess")) {
-				List<Map<String, String>> postprocess = (List<Map<String, String>>) prediction.get(key);
-				// TODO convert into a list of processings
-				String[] commands = new String[postprocess.size()];
-				int processingCount = 0;
-				for (Map<String, String> processing : postprocess) {
-					String spec = processing.get("spec");
-					if (spec != null && processing.containsKey("kwargs")) {
-						commands[processingCount] = processing.get("kwargs");
-					} else if (spec != null && !processing.containsKey("kwargs") && spec.contains(".jar")) {
-						int extensionPosition = spec.indexOf(".jar");
-						if (extensionPosition == -1)
-						commands[processingCount] = spec.substring(0, extensionPosition + 4);
-					} else if (spec != null && !processing.containsKey("kwargs") && spec.contains(".class")) {
-						int extensionPosition = spec.indexOf(".class");
-						commands[processingCount] = spec.substring(0, extensionPosition + 6);
-					} else if (spec == null) {
-						commands = null;
-					}
-					
-					processingCount ++;
-				}
-				post.put(key, commands);
-			}
-			
-		}
-		
-		
-		name = name != null ? (String) name : "n/a";
-		documentation = documentation != null ? documentation : "n/a";
-		version = version != null ? version : "n/a";
-		license = license != null ? license : "n/a";
-		memoryPeak = memoryPeak != null ? memoryPeak : "n/a";
-		runtime = runtime != null ?  runtime : "n/a";
-		tag = tag != null ? tag : "serve";
-		graph = graph != null ? graph : "serving_default";
-		
-		*/
-		/* TODO remove
-		// Check that the model sha256 is complete
-		saved_modelSha256 = (String) ((Map<String, Object>) obj.get("model")).get("sha256");
-		if (saved_modelSha256 == null) {
-			completeConfig = false;
-			return;
-		}
-		*/ 
+		outputList.add(output);
+		return rawYaml;
 	}
 	
-	public static String[] castListToStringArray(List list) {
-		String[] array = new String[list.size()];
-		int c = 0;
-		for (Object in : list) {
-			array[c ++] = (String) in;
+	private String getYamlInputs(String rawYaml) {
+		int lineEnd;
+		String txtLine;
+		DijTensor input = null;
+		while (rawYaml.trim().indexOf("outputs:") != 0) {
+			// Get line
+			lineEnd = rawYaml.indexOf("\n");
+			txtLine = rawYaml.substring(1, lineEnd).trim();
+			int contentStarts = txtLine.indexOf(":");
+			rawYaml = rawYaml.substring(lineEnd + 1);
+			if (txtLine.indexOf("-") == 0 && input != null) {
+				inputList.add(input);
+			} else if (txtLine.indexOf("-") == 0) {
+				int endInd = txtLine.indexOf(":");
+				String name = txtLine.substring(contentStarts, endInd).trim();
+				input = new DijTensor(name);
+			} else if (txtLine.indexOf("axes") == 0 && input.form == null) {
+				input.form = txtLine.substring(contentStarts + 1).trim();
+			} else if (txtLine.indexOf("shape") == 0 && txtLine.equals("shape:")) {
+				lineEnd = rawYaml.indexOf("\n");
+				txtLine = rawYaml.substring(1, lineEnd).trim();
+				rawYaml = rawYaml.substring(lineEnd + 1);
+				int startInd = txtLine.indexOf("[");
+				int endInd = txtLine.indexOf("]");
+				String[] line = txtLine.substring(startInd + 1, endInd).split(",");
+				input.minimum_size = new int[line.length];
+				for (int i = 0; i < line.length; i ++)
+					input.minimum_size[i] = Integer.parseInt(line[i].trim());
+				lineEnd = rawYaml.indexOf("\n");
+				txtLine = rawYaml.substring(1, lineEnd).trim();
+				rawYaml = rawYaml.substring(lineEnd + 1);
+				startInd = txtLine.indexOf("[");
+				endInd = txtLine.indexOf("]");
+				line = txtLine.substring(startInd + 1, endInd).split(",");
+				input.step = new int[line.length];
+				for (int i = 0; i < line.length; i ++)
+					input.step[i] = Integer.parseInt(line[i].trim());
+				input.recommended_patch = new int[input.minimum_size.length];
+			} else if (txtLine.indexOf("shape") == 0 && !txtLine.equals("shape:")) {
+				int startInd = txtLine.indexOf("[");
+				int endInd = txtLine.indexOf("]");
+				String[] line = txtLine.substring(startInd + 1, endInd).split(",");
+				input.minimum_size = new int[line.length];
+				for (int i = 0; i < line.length; i ++)
+					input.minimum_size[i] = Integer.parseInt(line[i].trim());
+				input.step = new int[input.minimum_size.length];
+				input.recommended_patch = input.minimum_size;
+			}
 		}
-		return array;
+		inputList.add(input);
+		return rawYaml;
+	}
+
+
+
+	public String getYamlModel(String rawYaml) {
+		// Get line
+		int lineEnd = rawYaml.indexOf("\n");
+		String txtLine = rawYaml.substring(1, lineEnd);
+		// TODO change 'tensorflow_protobuffer:' by 'tensorflow_js:'
+		while (!txtLine.trim().equals("tensorflow_protobuffer:")) {
+			// Get line
+			lineEnd = rawYaml.indexOf("\n");
+			txtLine = rawYaml.substring(1, lineEnd);
+			rawYaml = rawYaml.substring(lineEnd + 1);
+		}
+		while (rawYaml.trim().indexOf("name") != 0) {
+			// Get line
+			lineEnd = rawYaml.indexOf("\n");
+			txtLine = rawYaml.substring(1, lineEnd);
+			rawYaml = rawYaml.substring(lineEnd + 1);
+		}
+		// Get model name
+		lineEnd = rawYaml.indexOf("\n");
+		txtLine = rawYaml.substring(1, lineEnd);
+		// Get field
+		int startContent = txtLine.indexOf(":");
+		// Get field content
+		version = txtLine.substring(startContent + 1);
+		
+		rawYaml = rawYaml.substring(lineEnd + 1);
+		
+		//  Get model source
+		while (rawYaml.trim().indexOf("source") != 0) {
+			// Get line
+			lineEnd = rawYaml.indexOf("\n");
+			txtLine = rawYaml.substring(1, lineEnd);
+			rawYaml = rawYaml.substring(lineEnd + 1);
+		}
+		// Get model name
+		lineEnd = rawYaml.indexOf("\n");
+		txtLine = rawYaml.substring(1, lineEnd);
+		// Get field
+		startContent = txtLine.indexOf(":");
+		// Get field content
+		path2Model = txtLine.substring(startContent + 1);
+		
+		rawYaml = rawYaml.substring(lineEnd + 1);
+		
+		return rawYaml;
 	}
 	
-	public static int[] castListToIntArray(List list) {
-		int[] array = new int[list.size()];
-		int c = 0;
-		for (Object in : list) {
-			array[c ++] = (int) in;
+	public String getYamlEnum(String rawYaml, List<String> enumeration) {
+		while (rawYaml.trim().substring(0, 1).equals("-")) {
+			// Get line
+			int lineEnd = rawYaml.trim().indexOf("\n");
+			String txtLine = rawYaml.trim().substring(1, lineEnd);
+			enumeration.add(txtLine);
+			rawYaml = rawYaml.trim().substring(lineEnd + 1);
 		}
-		return array;
+		return rawYaml;
 	}
 	
-	public static double[] castListToDoubleArray(List list) {
-		double[] array = new double[list.size()];
-		int c = 0;
-		for (Object in : list) {
-			array[c ++] = (double) in;
+	public String getYamlCitation(String rawYaml) {
+		cite = new ArrayList<HashMap<String, String>>();
+		HashMap<String, String> c = new HashMap<String, String>();
+		while (rawYaml.trim().substring(0, 1).equals("-")) {
+			// Get line
+			int lineEnd = rawYaml.trim().indexOf("\n");
+			String txtLine = rawYaml.trim().substring(1, lineEnd);
+			// Get field name
+			int startContent = txtLine.indexOf(":");
+			String fieldName = txtLine.substring(0, startContent);
+			// Get field content
+			String txtContent = txtLine.substring(startContent + 1);
+			
+			if (fieldName.contains("text") && c.keySet().size() == 0) {
+				c = new HashMap<String, String>();
+				c.put("text", txtContent);
+			} else if (fieldName.contains("text") && c.keySet().size() >0) {
+				cite.add(c);
+				c = new HashMap<String, String>();
+				c.put("text", txtContent);
+			} else if (fieldName.contains("doi")) {
+				c.put("doi", txtContent);
+			}
+			rawYaml = rawYaml.trim().substring(lineEnd + 1);
 		}
-		return array;
-	}
-	
-	public static float[] castListToFloatArray(List list) {
-		float[] array = new float[list.size()];
-		int c = 0;
-		for (Object in : list) {
-			array[c ++] = Float.parseFloat((in + ""));
-		}
-		return array;
+		cite.add(c);	
+		return rawYaml;
 	}
 }

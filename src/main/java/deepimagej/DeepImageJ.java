@@ -61,8 +61,8 @@ public class DeepImageJ {
 	public ArrayList<String>		msgLoads		= new ArrayList<String>();
 	public ArrayList<String[]>		msgArchis		= new ArrayList<String[]>();
 	
-	public DeepImageJ(String pathModel) throws IOException {
-		this.params = new Parameters(pathModel);
+	public DeepImageJ(String raw) {
+		this.params = new Parameters(raw);
 		//this.valid = checkUser(p);
 	}
 
@@ -70,9 +70,8 @@ public class DeepImageJ {
 		return this.valid;
 	}
 	
-	static public DeepImageJ ImjoyYaml2DijYaml(String raw) throws IOException {
-		DeepImageJ dp = new DeepImageJ("");
-		// TODO do stuff
+	static public DeepImageJ ImjoyYaml2DijYaml(String raw) {
+		DeepImageJ dp = new DeepImageJ(raw);
 		return dp;
 	}
 	/*
