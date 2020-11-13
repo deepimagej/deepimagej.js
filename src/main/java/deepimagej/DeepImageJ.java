@@ -103,7 +103,7 @@ public class DeepImageJ {
 	}
 	*/
 
-	public void writeParameters(TextArea info, ArrayList<String> checks) {
+	public void writeParameters(TextArea info) {
 		if (params == null) {
 			info.append("No params\n");
 			return;
@@ -125,7 +125,7 @@ public class DeepImageJ {
 		info.append("References" + "\n");
 		// TODO robustness
 		for (HashMap<String, String> ref : params.cite) {
-			info.append("  - Article: " + ref.get("text") + "\n");
+			info.append("  - Text: " + ref.get("text") + "\n");
 			info.append("    Doi: " + ref.get("doi") + "\n");
 		}
 		info.append("Framework:" + params.framework + "\n");

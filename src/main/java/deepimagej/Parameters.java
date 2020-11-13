@@ -404,13 +404,14 @@ public class Parameters {
 			int contentStarts = txtLine.indexOf(":");
 			rawYaml = rawYaml.substring(lineEnd + 1);
 			if (txtLine.indexOf("-") == 0 && output != null) {
+				output.tensorType = "image";
 				outputList.add(output);
 			} else if (txtLine.indexOf("-") == 0) {
 				int endInd = txtLine.indexOf(":");
 				String name = txtLine.substring(contentStarts, endInd).trim();
 				output = new DijTensor(name);
 			} else if (txtLine.indexOf("axes") == 0) {
-				output.form = txtLine.substring(contentStarts + 1).trim();
+				output.form = txtLine.substring(contentStarts + 1).trim().toUpperCase();
 			} else if (txtLine.indexOf("halo") == 0) {
 				int startInd = txtLine.indexOf("[");
 				int endInd = txtLine.indexOf("]");
@@ -454,6 +455,7 @@ public class Parameters {
 				output.scale = new float[output.recommended_patch.length];
 			}
 		}
+		output.tensorType = "image";
 		outputList.add(output);
 		return rawYaml;
 	}
@@ -475,7 +477,7 @@ public class Parameters {
 				String name = txtLine.substring(contentStarts, endInd).trim();
 				input = new DijTensor(name);
 			} else if (txtLine.indexOf("axes") == 0 && input.form == null) {
-				input.form = txtLine.substring(contentStarts + 1).trim();
+				input.form = txtLine.substring(contentStarts + 1).trim().toUpperCase();
 			} else if (txtLine.indexOf("shape") == 0 && txtLine.equals("shape:")) {
 				lineEnd = rawYaml.indexOf("\n");
 				txtLine = rawYaml.substring(1, lineEnd).trim();

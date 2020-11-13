@@ -121,7 +121,6 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 	public void run(String arg) {
 
 		ImagePlus imp = WindowManager.getTempCurrentImage();
-		imp = IJ.createImage("aux", 64, 64, 1, 8);
 		
 		
 		if (imp == null) {
@@ -322,7 +321,7 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 			case "C":
 				p = imp.getNChannels();
 				break;
-		}
+			}
 			if (p * 3 < patch[i]) {
 				// TODO add info about dimensions?
 				IJ.error("Error: Tiles cannot be bigger than 3 times the image at any dimensio.\n"
@@ -378,8 +377,9 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 				public void resolveString(String result){
 					rawYaml = result;
 					System.out.println(rawYaml);
-					DeepImageJ dp = null;
+					dp = null;
 					dp = DeepImageJ.ImjoyYaml2DijYaml(rawYaml);
+					
 					if (dp == null) {
 						info.setCaretPosition(0);
 						info.append("<Please select a model>\n");
@@ -398,10 +398,7 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 
 					info.setText("");
 					info.setCaretPosition(0);
-					dp.writeParameters(info, dp.msgChecks);
-					info.append("----------- LOAD INFO ------------\n");
-					for (String msg : dp.msgLoads)
-						info.append(msg + "\n");
+					dp.writeParameters(info);
 					
 					// Get basic information about the input from the yaml
 					String tensorForm = dp.params.inputList.get(0).form;
