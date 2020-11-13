@@ -379,11 +379,7 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 					rawYaml = result;
 					System.out.println(rawYaml);
 					DeepImageJ dp = null;
-					try {
-						dp = DeepImageJ.ImjoyYaml2DijYaml(rawYaml);
-					} catch (IOException e1) {
-						IJ.error("Unable to fetch the model yaml from the Bioimage Zoo");
-					}
+					dp = DeepImageJ.ImjoyYaml2DijYaml(rawYaml);
 					if (dp == null) {
 						info.setCaretPosition(0);
 						info.append("<Please select a model>\n");
