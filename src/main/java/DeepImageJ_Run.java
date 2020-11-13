@@ -341,8 +341,8 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 			}
 		}
 		
-		String yaml = Integer.toString(choices[0].getSelectedIndex());
-		calculateImage(imp, yaml);
+		String selecteModel = choices[0].getSelectedItem();
+		calculateImage(imp, selecteModel);
 		
 		// Free memory allocated by the plugin 
 		this.dp = null;
@@ -464,7 +464,7 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 	}
 
 	
-	public void calculateImage(ImagePlus inp, String yaml) {
+	public void calculateImage(ImagePlus inp, String modelName) {
 		// Convert RGB image into RGB stack 
 		if (batch == false) {
 			ImageWindow windToClose = inp.getWindow();
@@ -504,13 +504,14 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 			log.print("end preprocessing");
 			
 			log.print("start progress");
-			log.print("start tunner");
+			log.print("start runner");
 			RunnerProgress rp = new RunnerProgress(dp);
 			HashMap<String, Object> output = null;
 			if (dp.params.framework.equals("Tensorflow")) {
-				RunnerTf runner = new RunnerTf(dp, rp, inputsMap, yaml, log);
+				RunnerTf runner = new RunnerTf(dp, rp, inputsMap, modelName, log);
 				rp.setRunner(runner);
 				// TODO decide what to store at the end of the execution
+				IJ.error("Get here");
 				Future<HashMap<String, Object>> f1 = service.submit(runner);
 				output = f1.get();
 			}

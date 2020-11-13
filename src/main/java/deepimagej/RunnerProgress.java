@@ -53,21 +53,16 @@ import javax.swing.JPanel;
 
 import deepimagej.components.BorderLabel;
 import deepimagej.tools.NumFormat;
-import deepimagej.tools.SystemUsage;
 import ij.gui.GUI;
 
 public class RunnerProgress extends JDialog implements ActionListener {
 
 	private BorderLabel			title		= new BorderLabel("Name ........");
 	private BorderLabel			patches		= new BorderLabel("Patch not set");
-	private BorderLabel			memory		= new BorderLabel("Memory........");
-	private BorderLabel			peak			= new BorderLabel("Memory........");
-	private BorderLabel			processor	= new BorderLabel("Processor.....");
 	private Timer				timer		= new Timer(true);
 	private JButton				bnStop		= new JButton("Stop");
 	private BorderLabel			time			= new BorderLabel("Elapsed time");
 	private double				chrono;
-	private double				peakmem 		= 0;
 	private Clock				clock;
 	private GridBagLayout		layout		= new GridBagLayout();
 	private GridBagConstraints	constraint	= new GridBagConstraints();
@@ -81,11 +76,8 @@ public class RunnerProgress extends JDialog implements ActionListener {
 		JPanel prog = new JPanel(layout);
 		place(prog, 0, 1, 0, title);
 		place(prog, 1, 1, 0, time);
-		place(prog, 2, 1, 0, processor);
-		place(prog, 3, 1, 0, patches);
-		place(prog, 4, 1, 0, memory);
-		place(prog, 5, 1, 0, peak);
-		place(prog, 7, 1, 0, bnStop);
+		place(prog, 2, 1, 0, patches);
+		place(prog, 3, 1, 0, bnStop);
 		info();
 		JPanel panel = new JPanel(layout);
 		place(panel, 0, 0, 10, prog);
@@ -142,17 +134,9 @@ public class RunnerProgress extends JDialog implements ActionListener {
  
 	public void info() {
 		title.setText(name);
-		double mem = SystemUsage.getHeapUsed();
-		peakmem = Math.max(peakmem, mem);
 		time.setText("Runtime: " + NumFormat.seconds((System.nanoTime() - chrono)));
-		memory.setText("Used memory: " + NumFormat.bytes(mem) + " / " + SystemUsage.getMaxMemory());
-		peak.setText("Peak memory: " + NumFormat.bytes(peakmem));
-		processor.setText("Load CPU: " + String.format("%1.3f", SystemUsage.getLoad()) + "%");
 		if (runner != null && (runner instanceof RunnerTf))
 			patches.setText("Patches: " + ((RunnerTf) runner).getCurrentPatch() + "/" + ((RunnerTf) runner).getTotalPatch());
-	}
-	public double getPeakmem() {
-		return this.peakmem;
 	}
 	
 	public class Clock extends TimerTask {

@@ -38,9 +38,7 @@
 package deepimagej;
 
 import java.awt.EventQueue;
-import java.nio.FloatBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -65,15 +63,15 @@ public class RunnerTf implements Callable<HashMap<String, Object>> {
 	private Log						log;
 	private int						currentPatch = 0;
 	private int						totalPatch = 0;
-	private String 					yaml = "";
+	private String 					modelName = "";
 	private boolean 				runModel = false;
 
-	public RunnerTf(DeepImageJ dp, RunnerProgress rp,HashMap<String,Object> inputMap, String yaml, Log log) {
+	public RunnerTf(DeepImageJ dp, RunnerProgress rp,HashMap<String,Object> inputMap, String modelName, Log log) {
 		this.dp = dp;
 		this.rp = rp;
 		this.log = log;
 		this.inputMap = inputMap;
-		this.yaml = yaml;
+		this.modelName = modelName;
 		log.print("constructor runner");
 	}
 
@@ -259,7 +257,6 @@ public class RunnerTf implements Callable<HashMap<String, Object>> {
 		}
 
 		log.print("start " + npx + "x" + npy);
-		
 		for (int i = 0; i < npx; i++) {
 			for (int j = 0; j < npy; j++) {
 				for (int z = 0; z < npz; z++) {
@@ -339,7 +336,7 @@ public class RunnerTf implements Callable<HashMap<String, Object>> {
 					try {
 						runModel = false;
 						// Call the ImJoyModelRunner from the ImJoy API to run the TF model
-						Global.jsCall("callPlugin", "ImJoyModelRunner", "predict", yaml, patch,  new Promise(){
+						Global.jsCall("callPlugin", "ImJoyModelRunner", "predict", modelName, patch,  new Promise(){
 							public void resolveString(String result){
 								runModel = true;
 							}
@@ -433,7 +430,6 @@ public class RunnerTf implements Callable<HashMap<String, Object>> {
 		long endTime = System.nanoTime();
 		params.runtime = NumFormat.seconds(endTime - startingTime);
 		// Set Parameter params.memoryPeak
-		params.memoryPeak = NumFormat.bytes(rp.getPeakmem());
 		rp.stop();
 		// Set Parameter  params.outputSize
 		HashMap<String, Object> outputMap = new HashMap<String, Object>();
