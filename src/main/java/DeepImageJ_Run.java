@@ -105,7 +105,7 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 	private boolean 					batch		= true;
 	private String						rawYaml 	= "";
 	private String[]					modelList;
-	private static boolean modelsDone = false;
+	private static Object modelLock;
 	
 	static public void main(String args[]) {
 		path = System.getProperty("user.home") + File.separator + "Google Drive" + File.separator + "ImageJ" + File.separator + "models" + File.separator;
@@ -136,39 +136,29 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 
 		GenericDialog dlg = new GenericDialog("DeepImageJ Run [" + Constants.version + "]");
 		
-		modelsDone = false;
+		modelLock = new Object();
 		// return a list of names (string)
 		Global.jsCall("callPlugin", "ImJoyModelRunner", "getModels", new Promise(){
 			public void resolveString(String result){
 				modelList = result.split(",");
 				System.out.println("model list" + result);
-				modelsDone =true;
+				modelLock.notify();
 			}
 			public void resolveImagePlus(ImagePlus result){
-				modelsDone =true;
+				modelLock.notify();
 			}
 			public void reject(String error){
 				IJ.error("Cannot fetch list of models from Bioimage Model Zoo, error: "+error);
-				modelsDone =true;
+				modelLock.notify();
 			}
 		});
 		try {
-			// block execution until we get the file path from js
-			EventQueue.invokeAndWait(new Runnable() {
-				public void run() {
-					while(!modelsDone){
-						try {
-							Thread.sleep(500);
-						} catch (Exception e) {
-							System.out.println(e.toString());
-							break;
-						}
-					}
-				}
-			});
-		} catch (Exception e) {
+			modelLock.wait();
+		} catch (InterruptedException e) {
+			// TODO: throw the error
 			System.out.println(e.toString());
 		}
+
 		String[] items = new String[modelList.length + 1];
 		items[0] = "<select a model from this list>";
 		
