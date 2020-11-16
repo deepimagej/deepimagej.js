@@ -59,16 +59,14 @@ public class RunnerTf implements Callable<HashMap<String, Object>> {
 
 	private HashMap<String,Object> 	inputMap;
 	private DeepImageJ				dp;
-	private RunnerProgress			rp;
 	private Log						log;
 	private int						currentPatch = 0;
 	private int						totalPatch = 0;
 	private String 					modelName = "";
 	private boolean 				runModel = false;
 
-	public RunnerTf(DeepImageJ dp, RunnerProgress rp,HashMap<String,Object> inputMap, String modelName, Log log) {
+	public RunnerTf(DeepImageJ dp,HashMap<String,Object> inputMap, String modelName, Log log) {
 		this.dp = dp;
-		this.rp = rp;
 		this.log = log;
 		this.inputMap = inputMap;
 		this.modelName = modelName;
@@ -172,7 +170,7 @@ public class RunnerTf implements Callable<HashMap<String, Object>> {
 			IJ.log("Error patch size is too large.\n"
 					+ "Image Size: X = " + nx + ", Y = " + ny + ", Z = " + nz
 					+ "\n Patch Size: X = " + px + ", Y = " + py + ", Z = " + pz);
-			rp.stop();
+			// rp.stop();
 			return null;
 		}
 		log.print("patch size " + "X: " +  px + ", Y: " +  py + ", Z: " +  pz + ", C: " +  pc);
@@ -198,7 +196,7 @@ public class RunnerTf implements Callable<HashMap<String, Object>> {
 			IJ.log("Error in nChannel.\n"
 					+ "Image should have " + inputDims[channelPos] 
 							+ " instead of " + inDim[2]);
-			rp.stop();
+			// rp.stop();
 			return null;
 		}
 		// Get the padding in case the image needs any
@@ -340,7 +338,7 @@ public class RunnerTf implements Callable<HashMap<String, Object>> {
 							public void resolveString(String result){
 								runModel = true;
 							}
-							public void resolveImagePlus(ImagePlus output){
+							public void resolveImagePlus(byte [] output, int [] shape, String dtype){
 								// do postprocessing here with the output
 								runModel = true;
 			                	outputImages[0] = output;
