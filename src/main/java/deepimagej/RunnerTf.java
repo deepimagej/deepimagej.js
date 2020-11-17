@@ -63,7 +63,7 @@ public class RunnerTf implements Callable<HashMap<String, Object>> {
 	private int						currentPatch = 0;
 	private int						totalPatch = 0;
 	private String 					modelName = "";
-	private boolean 				runModel = false;
+	private Object 				runModelLock;
 
 	public RunnerTf(DeepImageJ dp,HashMap<String,Object> inputMap, String modelName, Log log) {
 		this.dp = dp;
@@ -76,9 +76,8 @@ public class RunnerTf implements Callable<HashMap<String, Object>> {
 	@Override
 	public HashMap<String, Object> call() {
 		log.print("call runner");
-		if (log.getLevel() >= 1)
-			rp.setVisible(true);
-
+		// if (log.getLevel() >= 1)
+			// rp.setVisible(true);
 
 		Parameters params = dp.params;
 		// Map that contains the input tensors that are not images.
@@ -91,7 +90,7 @@ public class RunnerTf implements Callable<HashMap<String, Object>> {
 			if (tensor.tensorType.contains("image")) {
 				imp = getImageFromMap(inputMap, tensor);
 				if (imp == null) {
-					rp.stop();
+					// rp.stop();
 					return null;
 				}
 				String inputPixelSizeX = ((float) imp.getCalibration().pixelWidth) + " " + imp.getCalibration().getUnit();
@@ -116,7 +115,7 @@ public class RunnerTf implements Callable<HashMap<String, Object>> {
 		List<ResultsTable> outputTables = new ArrayList<ResultsTable>();
 		
 		if (imp == null) {
-			rp.stop();
+			// rp.stop();
 			return null;
 		}
 		int nx = imp.getWidth();
@@ -158,7 +157,7 @@ public class RunnerTf implements Callable<HashMap<String, Object>> {
 						errorMsg += "\n" + dimLetters[i] + " : " + patchSize[i];
 					}
 					IJ.error(errorMsg);
-					rp.stop();
+					// rp.stop();
 					return null;
 				}
 			}
@@ -261,10 +260,10 @@ public class RunnerTf implements Callable<HashMap<String, Object>> {
 					// TODO reduce this mega big loop to something more modular
 					currentPatch++;
 					log.print("currentPatch " + currentPatch);
-					if (rp.isStopped()) {
-						rp.stop();
-						return null;
-					}
+					// if (rp.isStopped()) {
+					// 	rp.stop();
+					// 	return null;
+					// }
 					// Variables to track when the roi starts in the mirror image
 					int xMirrorStartPatch;
 					int yMirrorStartPatch;
@@ -332,38 +331,27 @@ public class RunnerTf implements Callable<HashMap<String, Object>> {
 					
 					// TODO for the moment we assume one input / one output
 					try {
-						runModel = false;
+						runModelLock = new Object();
 						// Call the ImJoyModelRunner from the ImJoy API to run the TF model
 						Global.jsCall("callPlugin", "ImJoyModelRunner", "predict", modelName, patch,  new Promise(){
 							public void resolveString(String result){
-								runModel = true;
+								runModelLock.notify();
 							}
-							public void resolveImagePlus(byte [] output, int [] shape, String dtype){
+							public void resolveImagePlus(ImagePlus output){
 								// do postprocessing here with the output
-								runModel = true;
-			                	outputImages[0] = output;
+								outputImages[0] = output;
+								runModelLock.notify();
 							}
 			                public void reject(String error){
 			                    // show the error here
-								runModel = true;
-			                	IJ.error("An error occurred trying to run the model using the ImJoy API, error:" + error);
+								IJ.error("An error occurred trying to run the model using the ImJoy API, error:" + error);
+								runModelLock.notify();
 			                }
 			            });
 						try {
-							// block execution until we get the file path from js
-							EventQueue.invokeAndWait(new Runnable() {
-								public void run() {
-									while(!runModel){
-										try {
-											Thread.sleep(500);
-										} catch (Exception e) {
-											System.out.println(e.toString());
-											break;
-										}
-									}
-								}
-							});
-						} catch (Exception err) {
+							runModelLock.wait();
+						} catch (InterruptedException err) {
+							// TODO: throw the error
 							System.out.println(err.toString());
 						}
 					}
@@ -375,7 +363,7 @@ public class RunnerTf implements Callable<HashMap<String, Object>> {
 						IJ.log("Another of the possible options is that the model has an encoder decoder\n"
 								+ "architecture that requires input to be divisible a certain amount of times.");
 						IJ.log("Please review the model architecture and the step and patch parameters.");
-						rp.stop();
+						// rp.stop();
 						return null;
 					}
 					catch(IllegalStateException ex) {
@@ -383,7 +371,7 @@ public class RunnerTf implements Callable<HashMap<String, Object>> {
 						IJ.log("Error applying the model");
 						IJ.log("Uninitialized weights.");
 						IJ.log("Check that the variables/weights folder contains a correct version of the weights");
-						rp.stop();
+						// rp.stop();
 						return null;
 					}
 					catch (Exception ex) {
@@ -391,7 +379,7 @@ public class RunnerTf implements Callable<HashMap<String, Object>> {
 						ex.printStackTrace();	
 						IJ.log("Error applying the model");
 						IJ.log(ex.getMessage());
-						rp.stop();
+						// rp.stop();
 						return null;
 					}
 					int[][] allOffsets = findOutputOffset(params.outputList);
@@ -412,10 +400,10 @@ public class RunnerTf implements Callable<HashMap<String, Object>> {
 									(int)(leftoverPixelsY * scaleY) - allOffsets[imCounter][1], (int)(leftoverPixelsZ * scaleZ) - allOffsets[imCounter][3]);
 							if (outputImages[imCounter] != null)
 								outputImages[imCounter].getProcessor().resetMinAndMax();
-							if (rp.isStopped()) {
-								rp.stop();
-								return null;
-							}
+							// if (rp.isStopped()) {
+							// 	rp.stop();
+							// 	return null;
+							// }
 							imCounter ++;
 						}
 					}
@@ -428,7 +416,7 @@ public class RunnerTf implements Callable<HashMap<String, Object>> {
 		long endTime = System.nanoTime();
 		params.runtime = NumFormat.seconds(endTime - startingTime);
 		// Set Parameter params.memoryPeak
-		rp.stop();
+		// rp.stop();
 		// Set Parameter  params.outputSize
 		HashMap<String, Object> outputMap = new HashMap<String, Object>();
 		int imageCount = 0;

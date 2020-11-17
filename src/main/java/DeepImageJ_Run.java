@@ -57,7 +57,6 @@ import deepimagej.Constants;
 import deepimagej.DeepImageJ;
 import deepimagej.Promise;
 import deepimagej.RunnerTf;
-import deepimagej.RunnerProgress;
 import deepimagej.components.BorderPanel;
 import deepimagej.exceptions.JavaProcessingError;
 import deepimagej.exceptions.MacrosError;
@@ -492,18 +491,12 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 				im.show();
 			WindowManager.setTempCurrentImage(null);
 			log.print("end preprocessing");
-			
-			log.print("start progress");
 			log.print("start runner");
-			RunnerProgress rp = new RunnerProgress(dp);
 			HashMap<String, Object> output = null;
 			if (dp.params.framework.equals("Tensorflow")) {
-				RunnerTf runner = new RunnerTf(dp, rp, inputsMap, modelName, log);
-				rp.setRunner(runner);
+				RunnerTf runner = new RunnerTf(dp, inputsMap, modelName, log);
 				// TODO decide what to store at the end of the execution
-				IJ.error("Get here");
-				Future<HashMap<String, Object>> f1 = service.submit(runner);
-				output = f1.get();
+				output = runner.call();
 			}
 			
 			inp.changes = false;
