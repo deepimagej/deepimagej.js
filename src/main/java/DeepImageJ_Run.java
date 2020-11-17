@@ -105,6 +105,7 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 	private String						rawYaml 	= "";
 	private String[]					modelList;
 	private static Object modelLock;
+	private static HashMap<String, Object> output;
 	
 	static public void main(String args[]) {
 		path = System.getProperty("user.home") + File.separator + "Google Drive" + File.separator + "ImageJ" + File.separator + "models" + File.separator;
@@ -492,13 +493,30 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 			WindowManager.setTempCurrentImage(null);
 			log.print("end preprocessing");
 			log.print("start runner");
-			HashMap<String, Object> output = null;
+			output = new HashMap<String, Object>();
+			modelLock = new Object();
 			if (dp.params.framework.equals("Tensorflow")) {
-				RunnerTf runner = new RunnerTf(dp, inputsMap, modelName, log);
+				// RunnerTf runner = new RunnerTf(dp, inputsMap, modelName, log);
 				// TODO decide what to store at the end of the execution
-				output = runner.call();
+				// output = runner.call();
+				for (String k : inputsMap.keySet()) {
+					ImagePlus ip = (ImagePlus)inputsMap.get(k);
+					Global.jsCall("callPlugin", "ImJoyModelRunner", "predict", modelName, ip,  new Promise(){
+						public void resolveString(String result){
+							
+						}
+						public void resolveImagePlus(ImagePlus out){
+							out.show();
+							output.put(k, out);
+							modelLock.notify();
+						}
+						public void reject(String error){
+
+						}
+					});
+				}
 			}
-			
+			modelLock.wait();
 			inp.changes = false;
 			inp.close();
 			if (output == null) 
