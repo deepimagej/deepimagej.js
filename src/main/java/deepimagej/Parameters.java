@@ -149,7 +149,7 @@ public class Parameters {
 	public List<String>	infoTags				= Arrays.asList(deepImageJTag);
 	public String		license					= null;
 	public String		language				= "Java";
-	public String		framework				= null;
+	public String		framework				= "Tensorflow";
 	public String		source					= null;
 	public String		coverImage				= null;
 	public String		description				= null;
@@ -471,6 +471,7 @@ public class Parameters {
 			int contentStarts = txtLine.indexOf(":");
 			rawYaml = rawYaml.substring(lineEnd + 1);
 			if (txtLine.indexOf("-") == 0 && input != null) {
+				input.tensorType = "image";
 				inputList.add(input);
 			} else if (txtLine.indexOf("-") == 0) {
 				int endInd = txtLine.indexOf(":");
@@ -509,6 +510,8 @@ public class Parameters {
 				input.recommended_patch = input.minimum_size;
 			}
 		}
+		
+		input.tensorType = "image";
 		inputList.add(input);
 		return rawYaml;
 	}

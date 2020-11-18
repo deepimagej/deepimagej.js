@@ -43,15 +43,11 @@ import java.awt.TextArea;
 import java.awt.TextField;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
-import java.awt.EventQueue;
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.lang.Runnable;
-import java.lang.Thread;
 
 import deepimagej.Constants;
 import deepimagej.DeepImageJ;
@@ -65,7 +61,6 @@ import deepimagej.tools.ArrayOperations;
 import deepimagej.tools.DijTensor;
 import deepimagej.tools.Index;
 import deepimagej.tools.Log;
-import deepimagej.tools.WebBrowser;
 
 import ij.IJ;
 import ij.ImagePlus;
@@ -74,10 +69,6 @@ import ij.gui.GenericDialog;
 import ij.gui.ImageWindow;
 import ij.plugin.PlugIn;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 import com.leaningtech.client.Global;
 
@@ -470,7 +461,6 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 		dp.params.inputList.get(0).recommended_patch = patch;
 		int runStage = 0;
 		// Create parallel process for calculating the image
-		ExecutorService service = Executors.newFixedThreadPool(1);
 		try {
 			ImagePlus im = inp.duplicate();
 			String correctTitle = inp.getTitle();
@@ -517,8 +507,6 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
-			// Close the parallel processes
-		    service.shutdown();
 			return;
 		} catch(MacrosError ex) {
 			if (runStage == 0) {
@@ -526,8 +514,6 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 			} else if (runStage == 2) {
 				IJ.error("Error during Macro postprocessing.");
 			}
-			// Close the parallel processes
-		    service.shutdown();
 			return;
 		
 		} catch (JavaProcessingError e) {
@@ -536,32 +522,6 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 			} else if (runStage == 2) {
 				IJ.error("Error during Java postprocessing.");
 			}
-			// Close the parallel processes
-		    service.shutdown();
-			return;
-		} catch (InterruptedException ex) {
-			ex.printStackTrace();
-			IJ.log("Exception " + ex.toString());
-			for (StackTraceElement ste : ex.getStackTrace()) {
-				IJ.log("line:" + "Error during the application of the model.");
-				IJ.log(ste.getClassName());
-				IJ.log(ste.getMethodName());
-				IJ.log("line:" + ste.getLineNumber());
-			}
-			// Close the parallel processes
-		    service.shutdown();
-			return;
-		} catch (ExecutionException ex) {
-			ex.printStackTrace();
-			IJ.log("Exception " + ex.toString());
-			for (StackTraceElement ste : ex.getStackTrace()) {
-				IJ.log("line:" + "Error during the application of the model.");
-				IJ.log(ste.getClassName());
-				IJ.log(ste.getMethodName());
-				IJ.log("line:" + ste.getLineNumber());
-			}
-			// Close the parallel processes
-		    service.shutdown();
 			return;
 		} catch (Exception ex) {
 			ex.printStackTrace();
@@ -579,13 +539,8 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 			} else if (runStage == 2) {
 				IJ.error("Error during postprocessing.");
 			}
-			// Close the parallel processes
-		    service.shutdown();
 			return;
 		}
-
-		// Close the parallel processes
-	    service.shutdown();
 	}
 	
 	public static String optimalPatch(int patchSize, int halo, String dimChar, int step, int min) {
