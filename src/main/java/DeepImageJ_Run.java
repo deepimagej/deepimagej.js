@@ -37,7 +37,9 @@
 
 import java.awt.BorderLayout;
 import java.awt.Choice;
+import java.awt.Color;
 import java.awt.Component;
+import java.awt.Font;
 import java.awt.Label;
 import java.awt.TextArea;
 import java.awt.TextField;
@@ -45,9 +47,11 @@ import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 
 import deepimagej.Constants;
 import deepimagej.DeepImageJ;
@@ -78,12 +82,10 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 
 	private TextArea					info		= new TextArea("Information on the model", 10, 58, TextArea.SCROLLBARS_BOTH);
 	private Choice[]					choices		= new Choice[5];
-	// TODO private TextField[]	    			texts		= new TextField[1];
-	private TextField[]	    			patchSize	= new TextField[5];
+	private TextField[]	    			texts		= new TextField[2];
 	private Label[]	    				patchLabel	= new Label[4];
 	private Label[]						labels		= new Label[8];
 	static private String				path		= IJ.getDirectory("imagej") + File.separator + "models" + File.separator;
-	//private HashMap<String, DeepImageJ>	dps;
 	private String[]					processingFile = new String[2];
 	private Log							log			= new Log();
 	private int[]						patch;
@@ -92,9 +94,9 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 	
 	private String						patchString = "Patch size [pixels]: ";
 
-	private boolean 					batch		= true;
 	private String						rawYaml 	= "";
 	private String[]					modelList;
+	private GenericDialog dlg;
 	private static Object modelLock;
 	
 	static public void main(String args[]) {
@@ -113,18 +115,13 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 		ImagePlus imp = WindowManager.getTempCurrentImage();
 		
 		
-		if (imp == null) {
-			batch = false;
-			imp = WindowManager.getCurrentImage();
-		}
-		
 		info.setEditable(false);
 
 		BorderPanel panel = new BorderPanel();
 		panel.setLayout(new BorderLayout());
 		panel.add(info, BorderLayout.CENTER);
 
-		GenericDialog dlg = new GenericDialog("DeepImageJ Run [" + Constants.version + "]");
+		dlg = new GenericDialog("DeepImageJ Run [" + Constants.version + "]");
 		
 		modelLock = new Object();
 		// return a list of names (string)
@@ -155,31 +152,29 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 		for (int i = 0; i < modelList.length; i++)
 			items[i + 1] = modelList[i];
 
-		dlg.addChoice("Model DeepImageJ", items, items[0]);
-		dlg.addChoice("Model version", new String[] {"------------Select version------------"}, "------------Select version------------");
-		dlg.addChoice("Preprocessing ", new String[] { "no preprocessing" }, "no preprocessing");
-		dlg.addChoice("Postprocessing", new String[] { "no postprocessing" }, "no postprocessing");
-		dlg.addMessage("Minimum size for each patch:");
-		dlg.addMessage("Step:");
-
-		dlg.addMessage(patchString);
-		int[] examplePatch = new int[]{4, 128, 128, 1};
-		String[] exampleDims = new String[] {"Z", "Y", "X", "C"};
-		for (int i = 0; i < examplePatch.length; i ++) {
-			dlg.addNumericField(exampleDims[i], examplePatch[i], 1);
-		}
+		dlg.addChoice("Format", new String[]         { "-----------------Select format-----------------" }, "-----------------Select format-----------------");
+		dlg.addChoice("Preprocessing ", new String[] { "-----------Select preprocessing----------- " }, "-----------Select preprocessing----------- ");
+		dlg.addChoice("Postprocessing", new String[] { "-----------Select postprocessing----------" }, "-----------Select postprocessing----------");
 		
-		dlg.addChoice("Logging", new String[] { "mute", "normal", "verbose", "debug" }, "normal");
+		dlg.addStringField("Axes order", "", 30);
+		dlg.addStringField("Tile size", "", 30);
+		
+		dlg.addChoice("Logging", new String[] { "mute", "normal                                                       ", "verbose", "debug" }, "normal                                                       ");
 		
 		dlg.addHelp(Constants.url);
 		dlg.addPanel(panel);
+		String msg = "Note: the output of a deep learning model strongly depends on the\n"
+			+ "data and the conditions of the training process. A pre-trained model\n"
+			+ "may require re-training. Please, check the documentation of this\n"
+			+ "model to get user guidelines: Help button.";
+		
+		Font font = new Font("Helvetica", Font.BOLD, 12);
+		dlg.addMessage(msg, font, Color.BLACK);
+		
 		
 		int countChoice = 0;
-		// TODO int countTextField = 0;
 		int countLabels = 0;
-		int numericFieldPatch = 0;
-		// TODO int numericFieldPad = 0;
-		int labelPatch = 0;
+		int countTxt = 0;
 		for (Component c : dlg.getComponents()) {
 			if (c instanceof Choice) {
 				Choice choice = (Choice) c;
@@ -187,17 +182,15 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 					choice.addItemListener(this);
 				choices[countChoice++] = choice;
 			}
-			if (c instanceof TextField && numericFieldPatch < exampleDims.length) {
-				patchSize[numericFieldPatch++] = (TextField) c;
-			}/*TODO remove else if (c instanceof TextField && numericFieldPad < exampleDims.length) {
-				texts[countTextField++] = (TextField) c;
-			}*/
+			if (c instanceof TextField) {
+				texts[countTxt ++] = (TextField) c;
+			}
 			if (c instanceof Label && ((Label) c).getText().trim().length() > 1) {
 				labels[countLabels++] = (Label) c;
-			} else if (c instanceof Label && labelPatch < exampleDims.length) {
-				patchLabel[labelPatch++] = (Label) c;
 			}
 		}
+		texts[0].setEditable(false);
+		texts[1].setEditable(false);
 		
 		info.setCaretPosition(0);
 		info.setText("");
@@ -231,21 +224,16 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 		
 		String modelName = dp.params.name;
 		
-		log.print("Load model: " + modelName);
-		
-		String version = dlg.getNextChoice();
-		
-		for (int i = 0; i < processingFile.length; i ++)
-			processingFile[i] = dlg.getNextChoice();
+		String format = (String) choices[1].getSelectedItem();
+		dp.params.framework = format.contains("pytorch") ? "Pytorch" : "Tensorflow";
+
+		processingFile[0] = (String) choices[2].getSelectedItem();
+		processingFile[1] = (String) choices[3].getSelectedItem();
 		
 		info.setText("");
 		info.setCaretPosition(0);
 		info.append("Loading model. Please wait...\n");
-		
-		if (dp == null) {
-			IJ.error("No valid model.");
-			return;
-		}			
+
 
 		dp.params.firstPreprocessing = null;
 		dp.params.secondPreprocessing = null;
@@ -278,7 +266,16 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 		String[] dims = DijTensor.getWorkingDims(tensorForm);
 
 		
-		patch = getPatchSize(dims, dp.params.inputList.get(0).form, patchSize);
+		patch = ArrayOperations.getPatchSize(dims, dp.params.inputList.get(0).form, texts[1].getText(), texts[1].isEditable());
+		if (patch == null) {
+			IJ.error("Please, introduce the patch size as integers separated by commas.\n"
+					+ "For the axes order 'Y,X,C' with:\n"
+					+ "Y=256, X=256 and C=1, we need to introduce:\n"
+					+ "'256,256,1'\n"
+					+ "Note: the key 'auto' can only be used by the plugin.");
+			run("");
+			return;
+		}
 		int level = dlg.getNextChoiceIndex();
 		log.setLevel(level);
 		log.reset();
@@ -301,25 +298,38 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 			case "C":
 				p = imp.getNChannels();
 				break;
-			}
+		}
 			if (p * 3 < patch[i]) {
-				// TODO add info about dimensions?
-				IJ.error("Error: Tiles cannot be bigger than 3 times the image at any dimensio.\n"
-						+ "Image");
+				String errMsg = "Error: Tiles cannot be bigger than 3 times the image at any dimension\n";
+				errMsg += " - X = " + imp.getWidth() + ", maximum tile size at X = " + (imp.getWidth() * 3 - 1) + "\n";
+				errMsg += " - Y = " + imp.getHeight() + ", maximum tile size at Y = " + (imp.getHeight() * 3 - 1) + "\n";
+				if (tensorForm.contains("C"))
+					errMsg += " - C = " + imp.getNChannels() + ", maximum tile size at C = " + (imp.getNChannels() * 3 - 1) + "\n";
+				if (tensorForm.contains("Z"))
+					errMsg += " - Z = " + imp.getNSlices() + ", maximum tile size at Z = " + (imp.getNSlices() * 3 - 1) + "\n";
+				IJ.error(errMsg);
+				run("");
 				return;
 			}
 		}
 		for (DijTensor inp: dp.params.inputList) {
 			for (int i = 0; i < min.length; i ++) {
-				if (inp.step[i] != 0 && patch[i] % inp.step[i] != 0) {
-					IJ.error("Patch size at dim: " + dims[i] + " should be a multiple of " + step[i]);
+				if (inp.step[i] != 0 && (patch[i] - inp.minimum_size[i]) % inp.step[i] != 0 && patch[i] != -1 && dp.params.allowPatching) {
+					int approxTileSize = ((patch[i] - inp.minimum_size[i]) / inp.step[i]) * inp.step[i] + inp.minimum_size[i];
+					IJ.error("Tile size at dim: " + dims[i] + " should be product of:\n  " + min[i] +
+							" + " + step[i] + "*N, where N can be any positive integer.\n"
+								+ "The immediately smaller valid tile size is " + approxTileSize);
+					run("");
 					return;
 				} else if (inp.step[i] == 0 && patch[i] != inp.minimum_size[i]) {
-					IJ.error("Patch size at dim: " + dims[i] + " should " + min[i]);
+					IJ.error("Patch size at dim: " + dims[i] + " should be " + min[i]);
+					run("");
 					return;
 				}
 			}
 		}
+		// TODO generalise for several image inputs
+		dp.params.inputList.get(0).recommended_patch = patch;
 		
 		String selecteModel = choices[0].getSelectedItem();
 		calculateImage(imp, selecteModel);
@@ -327,22 +337,8 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 		// Free memory allocated by the plugin 
 		this.dp = null;
 		imp = null;
-		try {
-			this.finalize();
-		} catch (Throwable e) {
-			e.printStackTrace();
-			IJ.log("Non critical error");
-			IJ.log("Unable to clean memory after plugin execution");
-		}
-		System.gc();
 		this.dp = null;
 		imp = null;
-		try {
-			this.finalize();
-		} catch (Throwable e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 		System.gc();
 		
 	}
@@ -352,6 +348,10 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 		if (e.getSource() == choices[0]) {
 			info.setText("");
 			String modelName = choices[0].getSelectedItem().trim();
+			if (modelName.contentEquals("<select a model from this list>")) {
+				setGUIOriginalParameters();
+				return;
+			}
 			rawYaml = null;
 			Global.jsCall("callPlugin", "ImJoyModelRunner", "getModelInfo", modelName,  new Promise(){
 				public void resolveString(String result){
@@ -361,25 +361,43 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 					dp = DeepImageJ.ImjoyYaml2DijYaml(rawYaml);
 					
 					if (dp == null) {
-						info.setCaretPosition(0);
-						info.append("<Please select a model>\n");
-						choices[2].removeAll();
-						choices[2].addItem("no preprocessing");
-						choices[3].removeAll();
-						choices[3].addItem("no postprocessing");
-						labels[4].setText("Minimum size for each patch: ");
-						labels[5].setText("Step: ");
+						setGUIOriginalParameters();
 						return;
+					}
+					if (dp.params.framework.equals("Tensorflow/Pytorch")) {
+						choices[1].removeAll();
+						choices[1].addItem("-----------------Select format-----------------");
+						choices[1].addItem("tensorflow_saved_model_bundle");
+						choices[1].addItem("pytorch_script");
+					} else if (dp.params.framework.equals("Pytorch")) {
+						choices[1].removeAll();
+						choices[1].addItem("pytorch_script");
+					} else if (dp.params.framework.equals("Tensorflow")) {
+						choices[1].removeAll();
+						choices[1].addItem("tensorflow_saved_model_bundle");
 					}
 
 					info.setCaretPosition(0);
 					info.append("Loading model info. Please wait...\n");
-					
 
-					info.setText("");
-					info.setCaretPosition(0);
-					dp.writeParameters(info);
 					
+					choices[2].removeAll();
+					choices[3].removeAll();
+					Set<String> preKeys = dp.params.pre.keySet();
+					Set<String> postKeys = dp.params.post.keySet();
+					for (String p : preKeys) {
+						if (dp.params.pre.get(p) != null)
+							choices[2].addItem(Arrays.toString(dp.params.pre.get(p)));
+					}
+					if (choices[2].getItemCount() == 0)
+						choices[2].addItem("no preprocessing");
+					
+					for (String p : postKeys) {
+						if (dp.params.post.get(p) != null)
+							choices[3].addItem(Arrays.toString(dp.params.post.get(p)));
+					}
+					choices[3].addItem("no postprocessing");
+						
 					// Get basic information about the input from the yaml
 					String tensorForm = dp.params.inputList.get(0).form;
 					// Patch size if the input size is fixed, all 0s if it is not
@@ -388,49 +406,71 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 					int[] tensorMin = dp.params.inputList.get(0).minimum_size;
 					// Step if the size is not fixed, 0s if it is
 					int[] tensorStep = dp.params.inputList.get(0).step;
-					int[] haloSize = findTotalPadding(dp.params.inputList.get(0), dp.params.outputList, dp.params.pyramidalNetwork);
+					int[] haloSize = ArrayOperations.findTotalPadding(dp.params.inputList.get(0), dp.params.outputList, dp.params.pyramidalNetwork);
 					int[] dimValue = DijTensor.getWorkingDimValues(tensorForm, tensorPatch); 
 					int[] min = DijTensor.getWorkingDimValues(tensorForm, tensorMin); 
 					int[] step = DijTensor.getWorkingDimValues(tensorForm, tensorStep); 
 					int[] haloVals = DijTensor.getWorkingDimValues(tensorForm, haloSize); 
 					String[] dim = DijTensor.getWorkingDims(tensorForm);
 					
+					HashMap<String, String> letterDefinition = new HashMap<String, String>();
+					letterDefinition.put("X", "width");
+					letterDefinition.put("Y", "height");
+					letterDefinition.put("C", "channels");
+					letterDefinition.put("Z", "depth");
+
+
+					info.setText("");
+					info.setCaretPosition(0);
+					info.append("\n");
+					info.append("SELECTED MODEL: " + dp.params.name.toUpperCase());
+					info.append("\n");
+					info.append("\n");
+					info.append("---- TILING SPECIFICATIONS ----\n");
+					String infoString = "";
+					for (String dd : dim)
+						infoString += dd + ": " + letterDefinition.get(dd) + ", ";
+					infoString = infoString.substring(0, infoString.length() - 2);
+					info.append(infoString + "\n");
+					info.append("  - minimum_size: ");
+					String minString = "";
+					for (int i = 0; i < dim.length; i ++)
+						minString += dim[i] + "=" + min[i] + ", ";
+					minString = minString.substring(0, minString.length() - 2);
+					info.append(minString + "\n");
+					info.append("  - step: ");
+					String stepString = "";
+					for (int i = 0; i < dim.length; i ++)
+						stepString += dim[i] + "=" + step[i] + ", ";
+					stepString = stepString.substring(0, stepString.length() - 2);
+					info.append(stepString + "\n");
+					info.append("\n");
+					info.append("Each dimension is calculated as:\n");
+					info.append("  - tile_size = minimum_size + step * n, where n is any positive integer\n");
+					String optimalPatch = ArrayOperations.optimalPatch(dimValue, haloVals, dim, step, min, dp.params.allowPatching);
+					info.append("\n");
+					info.append("Default tile_size for this model: " + optimalPatch + "\n");
+					info.append("\n");
+					info.setEditable(false);
+
+					dp.writeParameters(info);
+					info.setCaretPosition(0);
 					
-					if (Arrays.equals(tensorStep, new int[tensorStep.length])) {
-						labels[4].setText("The patch size was fixed by the developer.");
-						labels[5].setText("");
-					} else {
-						String minSize = "Minimum size for each dimension: ";
-						String stepSize = "Step for each dimension: ";
-						for (int i = 0; i < dim.length; i ++) {
-							String val = "" + min[i];
-							String s = "" + step[i];
-							if (step[i] == 0) {s = "fixed";}
-							minSize = minSize + dim[i] + ":" + val + " ";
-							stepSize = stepSize + dim[i] + ":" + s + " ";
-						}
-						labels[4].setText(minSize);
-						labels[5].setText(stepSize);
+					String axesAux = "";
+					for (String dd : dim) {axesAux += dd + ",";}
+					texts[0].setText(axesAux.substring(0, axesAux.length() - 1));
+					texts[0].setEditable(false);
+					
+					texts[1].setText(optimalPatch);
+					int auxFixed = 0;
+					for (int ss : step)
+						auxFixed += ss;
+
+					texts[1].setEditable(true);
+					if (!dp.params.allowPatching || dp.params.pyramidalNetwork || auxFixed == 0) {
+						texts[1].setEditable(false);
 					}
-					// Hide all the labels to show only the necessary ones
-					for (int i = 0; i < patchLabel.length; i ++) {
-						patchLabel[i].setVisible(false);
-						
-						patchSize[i].setVisible(false);
-						patchSize[i].setEditable(true);
-						patchSize[i].setEnabled(true);
-						
-					}
-					for (int i = 0; i < dim.length; i ++) {
-						patchLabel[i].setVisible(true);
-						patchSize[i].setVisible(true);
-						patchLabel[i].setText(dim[i]);
-						// Set the corresponding value and set whether the
-						// text fields are editable or not
-						patchSize[i].setText(optimalPatch(dimValue[i], haloVals[i], dim[i], step[i], min[i]));
-						patchSize[i].setEditable(step[i] != 0 && dp.params.allowPatching);
-						patchSize[i].setEnabled(step[i] != 0 && dp.params.allowPatching);
-					}
+					dlg.getButtons()[0].setEnabled(true);
 				}
 				public void resolveImagePlus(ImagePlus result){
 					rawYaml = "";
@@ -446,17 +486,12 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 	
 	public void calculateImage(ImagePlus inp, String modelName) {
 		// Convert RGB image into RGB stack 
-		if (batch == false) {
-			ImageWindow windToClose = inp.getWindow();
-			windToClose.dispose();
-			ImagePlus aux = ij.plugin.CompositeConverter.makeComposite(inp);
-			inp = aux == null ? inp : aux;
-			windToClose.setImage(inp);
-			windToClose.setVisible(true);
-		} else {
-			ImagePlus aux = ij.plugin.CompositeConverter.makeComposite(inp);
-			inp = aux == null ? inp : aux;
-		}
+		ImageWindow windToClose = inp.getWindow();
+		windToClose.dispose();
+		ImagePlus aux = ij.plugin.CompositeConverter.makeComposite(inp);
+		inp = aux == null ? inp : aux;
+		windToClose.setImage(inp);
+		windToClose.setVisible(true);
 		
 		dp.params.inputList.get(0).recommended_patch = patch;
 		int runStage = 0;
@@ -465,10 +500,8 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 			ImagePlus im = inp.duplicate();
 			String correctTitle = inp.getTitle();
 			im.setTitle("tmp_" + correctTitle);
-			if (batch == false) {
-				ImageWindow windToClose = inp.getWindow();
-				windToClose.dispose();
-			}
+			windToClose = inp.getWindow();
+			windToClose.dispose();
 			
 			WindowManager.setTempCurrentImage(inp);
 			log.print("start preprocessing");
@@ -477,15 +510,14 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 			runStage ++;
 			if (inputsMap.keySet().size() == 0)
 				throw new Exception();
-			if (batch == false)
-				im.show();
+			// Show the image
+			im.show();
 			WindowManager.setTempCurrentImage(null);
 			log.print("end preprocessing");
 			log.print("start runner");
 			HashMap<String, Object> output = null;
 			if (dp.params.framework.equals("Tensorflow")) {
 				RunnerTf runner = new RunnerTf(dp, inputsMap, modelName, log);
-				// TODO decide what to store at the end of the execution
 				output = runner.call();
 			}
 			
@@ -543,89 +575,35 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 		}
 	}
 	
-	public static String optimalPatch(int patchSize, int halo, String dimChar, int step, int min) {
-		// This method looks for the optimal patch size regarding the
-		// minimum patch constraint and image size. This is then suggested
-		// to the user
-		ImagePlus imp = null;
-		String patch;
-		if (imp == null) {
-			imp = WindowManager.getCurrentImage();
-		}
-		if (imp == null) {
-			patch = "100";
-			return patch;	
-		}
-		
-		int size = 0;
-		switch (dimChar) {
-			case "Y":
-				size = imp.getHeight();
-				break;
-			case "X":
-				size = imp.getWidth();
-				break;
-			case "Z":
-				size = imp.getNSlices();
-				break;
-			case "C":
-				size = imp.getNChannels();
-				break;
-		}
-		
-		if (step != 0) {
-			int optimalMult = (int)Math.ceil((double)(size + 2 * halo) / (double)step) * step;
-			if (optimalMult > 3 * size) {
-				optimalMult = optimalMult - step;
-			}
-			if (optimalMult > 3 * size) {
-				optimalMult = (int)Math.ceil((double)size / (double)step) * step;
-			}
-			patch = Integer.toString(optimalMult);
+	/*
+	 * Set the parameters for when no model is selected
+	 */
+	public void setGUIOriginalParameters() {
+		info.setText("Using Tensorflow Javascript 1.15.0 CPU");
+		choices[1].removeAll();
+		choices[1].addItem("-----------------Select format-----------------");
+		choices[2].removeAll();
+		choices[2].addItem("-----------Select preprocessing----------- ");
+		choices[3].removeAll();
+		choices[3].addItem("-----------Select postprocessing-----------");
+		texts[0].setText("");
+		texts[1].setText("");
+		texts[1].setEditable(false);
+		info.setCaretPosition(0);
+	}
 
-		} else if (patchSize != 0){
-			patch = "" + patchSize;
-		} else {
-			patch = "" + min;
-		}
-		return patch;
+	/*
+	 * For a model whose model.yaml file does not contain the necessary information,
+	 * indicate which fields have missing information or are incorrect
+	 */
+	private void setUnavailableModelText(ArrayList<String> fieldsMissing) {
+		info.setText("\nThe selected model contains error in the model.yaml.\n");
+		info.append("The errors are in the following fields:\n");
+		for (String err : fieldsMissing)
+			info.append(" - " + err + "\n");
+		dlg.getButtons()[0].setEnabled(false);
+		info.setCaretPosition(0);
 	}
-	
-	public static int[] getPatchSize(String[] dim, String form, TextField[] sizes) {
-		int[] patch = new int[form.split("").length]; // Dimensions of the patch: [x, y, c, z]
-		int batchInd = Index.indexOf(form.split(""), "B");
-		int count = 0;
-		for (int c = 0; c < patch.length; c ++) {
-			if (c != batchInd){
-				int value = Integer.parseInt(sizes[count++].getText());
-				patch[c] = value;
-			} else {
-				patch[c] = 1;
-			}
-		}
-		return patch;
-	}
-	
-	
-	public static int[] findTotalPadding(DijTensor input, List<DijTensor> outputs, boolean pyramidal) {
-		// Create an object of int[] that contains the output dimensions
-		// of each patch.
-		// This dimensions are always in the form of the input
-		String[] targetForm = input.form.split("");
-		int[] padding = new int[targetForm.length];
-		if (!pyramidal) {
-			for (DijTensor out: outputs) {
-				if (out.tensorType.contains("image") && !Arrays.equals(out.scale, new float[out.scale.length])) {
-					for (int i = 0; i < targetForm.length; i ++) {
-						int ind = Index.indexOf(out.form.split(""), targetForm[i]);
-						if (ind != -1 && !targetForm[i].equals("b") && (out.offset[ind] + out.halo[ind]) > padding[i])  {
-							padding[i] = out.offset[ind] + out.halo[ind];
-						}
-					}
-				}
-			}
-		}
-		return padding;
-	}
+
 
 }
