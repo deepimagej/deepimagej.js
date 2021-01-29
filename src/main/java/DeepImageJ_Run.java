@@ -50,7 +50,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Set;
 
 import deepimagej.Constants;
@@ -83,7 +82,6 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 	private TextArea					info		= new TextArea("Information on the model", 10, 58, TextArea.SCROLLBARS_BOTH);
 	private Choice[]					choices		= new Choice[5];
 	private TextField[]	    			texts		= new TextField[2];
-	private Label[]	    				patchLabel	= new Label[4];
 	private Label[]						labels		= new Label[8];
 	static private String				path		= IJ.getDirectory("imagej") + File.separator + "models" + File.separator;
 	private String[]					processingFile = new String[2];
@@ -91,8 +89,6 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 	private int[]						patch;
 	private DeepImageJ					dp			= null;
 	//private HashMap<String, String>		fullnames	= new HashMap<String, String>();
-	
-	private String						patchString = "Patch size [pixels]: ";
 
 	private String						rawYaml 	= "";
 	private String[]					modelList;
@@ -113,7 +109,13 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 	public void run(String arg) {
 
 		ImagePlus imp = WindowManager.getTempCurrentImage();
-		
+		if (imp == null) {
+			imp = WindowManager.getCurrentImage();
+		}
+		if (imp == null) {
+			IJ.error("Please open an image.");
+			return;
+		}
 		
 		info.setEditable(false);
 
@@ -151,7 +153,7 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 		
 		for (int i = 0; i < modelList.length; i++)
 			items[i + 1] = modelList[i];
-
+		dlg.addChoice("Model", items, items[0]);
 		dlg.addChoice("Format", new String[]         { "-----------------Select format-----------------" }, "-----------------Select format-----------------");
 		dlg.addChoice("Preprocessing ", new String[] { "-----------Select preprocessing----------- " }, "-----------Select preprocessing----------- ");
 		dlg.addChoice("Postprocessing", new String[] { "-----------Select postprocessing----------" }, "-----------Select postprocessing----------");
@@ -222,8 +224,6 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 			return;
 		}
 		
-		String modelName = dp.params.name;
-		
 		String format = (String) choices[1].getSelectedItem();
 		dp.params.framework = format.contains("pytorch") ? "Pytorch" : "Tensorflow";
 
@@ -257,7 +257,6 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 			}
 		}
 		*/
-		
 		String tensorForm = dp.params.inputList.get(0).form;
 		int[] tensorMin = dp.params.inputList.get(0).minimum_size;
 		int[] min = DijTensor.getWorkingDimValues(tensorForm, tensorMin); 
@@ -283,22 +282,22 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 		for (int i = 0; i < patch.length; i ++) {
 			int p = 0 ;
 			switch (tensorForm.split("")[i]) {
-			case "B":
-				p = 1;
-				break;
-			case "Y":
-				p = imp.getHeight();
-				break;
-			case "X":
-				p = imp.getWidth();
-				break;
-			case "Z":
-				p = imp.getNSlices();
-				break;
-			case "C":
-				p = imp.getNChannels();
-				break;
-		}
+				case "B":
+					p = 1;
+					break;
+				case "Y":
+					p = imp.getHeight();
+					break;
+				case "X":
+					p = imp.getWidth();
+					break;
+				case "Z":
+					p = imp.getNSlices();
+					break;
+				case "C":
+					p = imp.getNChannels();
+					break;
+			}
 			if (p * 3 < patch[i]) {
 				String errMsg = "Error: Tiles cannot be bigger than 3 times the image at any dimension\n";
 				errMsg += " - X = " + imp.getWidth() + ", maximum tile size at X = " + (imp.getWidth() * 3 - 1) + "\n";
@@ -364,6 +363,7 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 						setGUIOriginalParameters();
 						return;
 					}
+
 					if (dp.params.framework.equals("Tensorflow/Pytorch")) {
 						choices[1].removeAll();
 						choices[1].addItem("-----------------Select format-----------------");
@@ -380,7 +380,6 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 					info.setCaretPosition(0);
 					info.append("Loading model info. Please wait...\n");
 
-					
 					choices[2].removeAll();
 					choices[3].removeAll();
 					Set<String> preKeys = dp.params.pre.keySet();
@@ -397,7 +396,6 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 							choices[3].addItem(Arrays.toString(dp.params.post.get(p)));
 					}
 					choices[3].addItem("no postprocessing");
-						
 					// Get basic information about the input from the yaml
 					String tensorForm = dp.params.inputList.get(0).form;
 					// Patch size if the input size is fixed, all 0s if it is not
@@ -418,7 +416,6 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 					letterDefinition.put("Y", "height");
 					letterDefinition.put("C", "channels");
 					letterDefinition.put("Z", "depth");
-
 
 					info.setText("");
 					info.setCaretPosition(0);

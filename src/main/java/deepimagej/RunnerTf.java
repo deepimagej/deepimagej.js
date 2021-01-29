@@ -114,12 +114,7 @@ public class RunnerTf {
 			int nc = imp.getNChannels();
 			int nz = imp.getNSlices();
 			log.print("image size " + nx + "x" + ny + "x" + nz);
-			
-			// Now check if the image is an RGB, if it is make it composite,
-			// so ImageJ can see the 3 channels of the RGB image
-			if (imp.getType() == 4){
-				IJ.run(imp, "Make Composite", "");
-			}
+			IJ.log(imp.toString());
 			
 			int[] indices = new int[4];
 			String[] dimLetters = "XYCZ".split("");
@@ -322,13 +317,15 @@ public class RunnerTf {
 						// TODO for the moment we assume one input / one output
 						runModelLock = new Object();
 						// Call the ImJoyModelRunner from the ImJoy API to run the TF model
+						IJ.log("Processing patch of size: " + Arrays.toString(patch.getDimensions()));
 						Global.jsCall("callPlugin", "ImJoyModelRunner", "predict", modelName, patch,  new Promise(){
 							public void resolveString(String result){
+								IJ.error("An error occurred trying to run the model using the ImJoy API, error:" + result);
 								runModelLock.notify();
 							}
 							public void resolveImagePlus(ImagePlus output){
 								// do postprocessing here with the output
-								outputImages[0] = output;
+								impatch[0] = output;
 								runModelLock.notify();
 							}
 			                public void reject(String error){
@@ -343,18 +340,25 @@ public class RunnerTf {
 							// TODO: throw the error
 							System.out.println(err.toString());
 						}
+						IJ.log("Finished patch " +  currentPatch + " of " + totalPatch);
 						int[][] allOffsets = findOutputOffset(params.outputList);
 						int imCounter = 0;
 						for (int counter = 0; counter < params.outputList.size(); counter++) {
+							IJ.log(counter + "");
+							IJ.log(params.outputList.get(counter).tensorType.contains("image") + "");
 							if (params.outputList.get(counter).tensorType.contains("image") && !params.pyramidalNetwork && params.allowPatching) {
+								IJ.log("LLLLLLLLLLL2");
+								IJ.log(Arrays.toString(size));
 								float[] outSize = findOutputSize(size, params.outputList.get(counter), params.inputList, impatch[imCounter].getDimensions());
 								if (outputImages[imCounter] == null) {
+									IJ.log("LLLLLLLLLLL3");
 									int[] dims = impatch[imCounter].getDimensions();
 									outputImages[imCounter] = IJ.createHyperStack(outputTitles[imCounter], (int)outSize[0], (int)outSize[1], (int)outSize[2], (int)outSize[3], dims[4], 32);
 									outputImages[imCounter].getProcessor().resetMinAndMax();
 									outputImages[imCounter].show();
 								}
 								float scaleX = outSize[0] / nx; float scaleY = outSize[1] / ny; float scaleZ = outSize[3] / nz;
+								IJ.log("LLLLLLLLLLLL4");
 								ArrayOperations.imagePlusReconstructor(outputImages[imCounter], impatch[imCounter], (int) (xImageStartPatch * scaleX),
 										(int) (xImageEndPatch * scaleX), (int) (yImageStartPatch * scaleY), (int) (yImageEndPatch * scaleY),
 										(int) (zImageStartPatch * scaleZ), (int) (zImageEndPatch * scaleZ),(int)(leftoverPixelsX * scaleX) - allOffsets[imCounter][0],
@@ -438,14 +442,24 @@ public class RunnerTf {
 	}
 	
 	private static float[] findOutputSize(int[] inpSize, DijTensor outTensor, List<DijTensor> inputList, int[] patchSize) {
+		IJ.log(outTensor.referenceImage);
 		String refForOutput = outTensor.referenceImage;
+		for (DijTensor tt : inputList) {
+			IJ.log(tt.name);
+		}
 		DijTensor refTensor = DijTensor.retrieveByName(refForOutput, inputList);
 		float[] outSize = new float[inpSize.length];
 		String[] standarForm = "XYCZ".split("");
 		for (int i = 0; i < outSize.length; i ++) {
+			IJ.log(standarForm[i]);
+			IJ.log(outTensor.form);
+			IJ.log(refTensor.form);
 			int indOut = Index.indexOf(outTensor.form.split(""), standarForm[i]);
 			int indInp = Index.indexOf(refTensor.form.split(""), standarForm[i]);
+			IJ.log("indOut " + indOut);
+			IJ.log("indInp " + indInp);
 			if (indOut != -1 && indInp != -1) {
+				IJ.log("kk " + outTensor.scale[indOut]);
 				outSize[i] = inpSize[i] * outTensor.scale[indOut];
 			} else if (indOut != -1 && indInp == -1) {
 				outSize[i] = patchSize[i];

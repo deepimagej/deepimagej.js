@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Set;
 
 import deepimagej.tools.DijTensor;
+import ij.IJ;
 import ij.ImagePlus;
 
 public class Parameters {
@@ -201,12 +202,12 @@ public class Parameters {
 	 * List of all the available preprocessings from
 	 * the yaml file
 	 */
-	public HashMap<String, String[]> pre;
+	public HashMap<String, String[]> pre = new HashMap<String, String[]>();
 	/*
 	 * List of all the available postprocessings from
 	 * the yaml file
 	 */
-	public HashMap<String, String[]> post;
+	public HashMap<String, String[]> post = new HashMap<String, String[]>();
 	/*
 	 * Path to the model, in the case a Pytorch model is used. The Pytorch model
 	 * is always a .pt or .pth file. In the case of a Tensorflow model, path to the 
@@ -301,10 +302,10 @@ public class Parameters {
 				"      -   spec: ij.IJ::runMacroFile\r\n" + 
 				"          kwargs: postprocessing.txt";
 		System.out.print(raw);
-		new Parameters(raw);
-	}*/
-	
-	
+		Parameters p = new Parameters(raw);
+		System.out.print(raw);
+	}
+	*/
 	
 	public Parameters(String rawYaml) {
 		// Parse the yaml fields from the raw Yaml written in 
@@ -386,11 +387,77 @@ public class Parameters {
 					reduceStr = false;
 					break;
 				case "config":
+					rawYaml = getConfig(rawYaml);
 					break;
 			}
 			if (reduceStr)
 				rawYaml = rawYaml.substring(lineEnd + 1);
 		}
+	}
+	
+	/**
+	 * Get config information from yaml file
+	 * @param rawYaml: part of the yaml that includes the yaml
+	 * @return the rest of the yaml
+	 */
+	private String getConfig(String rawYaml) {
+		// Get pyramidal_model
+		int tagInd = rawYaml.indexOf("pyramidal_model");
+		int eolInd = rawYaml.indexOf("\n", tagInd + 1);
+		String line = rawYaml.substring(tagInd, eolInd);
+		if (line.toLowerCase().contains("false"))
+			pyramidalNetwork = false;
+		else
+			pyramidalNetwork = true;
+		// Get allow_tiling
+		tagInd = rawYaml.indexOf("allow_tiling");
+		eolInd = rawYaml.indexOf("\n", tagInd + 1);
+		line = rawYaml.substring(tagInd, eolInd);
+		if (line.toLowerCase().contains("false"))
+			allowPatching = false;
+		else
+			allowPatching = true;
+		// Get prediction pre-processing
+		pre = new HashMap<String, String[]>();
+		post = new HashMap<String, String[]>();
+		int preInd = rawYaml.indexOf("preprocess");
+		int postInd = rawYaml.indexOf("postprocess");
+		int kwargsInd = rawYaml.indexOf("kwargs", preInd + 1);
+		int kwargsInd2 = rawYaml.indexOf("kwargs", kwargsInd + 1);
+		if (kwargsInd == - 1 || kwargsInd > postInd) {
+			pre.put("preprocess", null);
+		} else if (kwargsInd < postInd && (kwargsInd2 > postInd || kwargsInd2 == - 1)) {
+			String preFile = rawYaml.substring(kwargsInd + "kwargs:".length(), rawYaml.indexOf("\n", kwargsInd)).trim();
+			pre.put("preprocess", new String[] {preFile});
+		} else {
+			String preFile = rawYaml.substring(kwargsInd + "kwargs:".length(), rawYaml.indexOf("\n", kwargsInd)).trim();
+			String preFile2 = rawYaml.substring(kwargsInd2 + "kwargs:".length(), rawYaml.indexOf("\n", kwargsInd2)).trim();
+			pre.put("preprocess", new String[] {preFile, preFile2});
+		}
+		// Get prediction post-processing
+		kwargsInd = rawYaml.indexOf("kwargs", postInd + 1);
+		kwargsInd2 = rawYaml.indexOf("kwargs", kwargsInd + 1);
+		if (kwargsInd == - 1) {
+			post.put("postprocess", null);
+		} else if (kwargsInd2 == - 1) {
+			eolInd = rawYaml.indexOf("\n", kwargsInd);
+			String file;
+			if (eolInd != -1)
+				file = rawYaml.substring(kwargsInd + "kwargs:".length(), eolInd).trim();
+			else
+				file = rawYaml.substring(kwargsInd + "kwargs:".length()).trim();
+			post.put("postprocess", new String[] {file});
+		} else {
+			String file = rawYaml.substring(kwargsInd + "kwargs:".length(), rawYaml.indexOf("\n", kwargsInd)).trim();
+			String file2;
+			eolInd = rawYaml.indexOf("\n", kwargsInd2);
+			if (eolInd != -1)
+				file2 = rawYaml.substring(kwargsInd2 + "kwargs:".length(), eolInd).trim();
+			else
+				file2 = rawYaml.substring(kwargsInd2 + "kwargs:".length()).trim();
+			post.put("postprocess", new String[] {file, file2});
+		}
+		return rawYaml.substring(postInd);
 	}
 	
 	private String getYamlOutputs(String rawYaml) {
@@ -474,8 +541,8 @@ public class Parameters {
 				input.tensorType = "image";
 				inputList.add(input);
 			} else if (txtLine.indexOf("-") == 0) {
-				int endInd = txtLine.indexOf(":");
-				String name = txtLine.substring(contentStarts, endInd).trim();
+				int startName = txtLine.indexOf(":");
+				String name = txtLine.substring(startName + 1).trim();
 				input = new DijTensor(name);
 			} else if (txtLine.indexOf("axes") == 0 && input.form == null) {
 				input.form = txtLine.substring(contentStarts + 1).trim().toUpperCase();

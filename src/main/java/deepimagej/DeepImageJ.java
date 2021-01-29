@@ -74,34 +74,6 @@ public class DeepImageJ {
 		DeepImageJ dp = new DeepImageJ(raw);
 		return dp;
 	}
-	/*
-	public static HashMap<String, DeepImageJ> getModelsFromGithub(String webUrl, HashMap<String, DeepImageJ> dpsMap) throws MalformedURLException, IOException, URISyntaxException {
-		RestTemplate restTemplate = new RestTemplate();
-		List<Map> response = restTemplate.getForObject(
-				webUrl + "?ref={branch}", List.class, "deepimagej",
-				"models", "master");
-
- 
-		// Iterate through list of file metadata from response.
-		for (Map fileMetaData : response) {
- 
-			// Get file name & raw file download URL from response.
-			String fileName = (String) fileMetaData.get("name");
-			String downloadUrl = (String) fileMetaData.get("download_url");
-			System.out.println("File Name = " + fileName + " | Download URL = " + downloadUrl);
- 
-			// We will only fetch read me file for this example.
-			if (downloadUrl != null && downloadUrl.contains("model.yaml")) {
-				DeepImageJ dp = new DeepImageJ(downloadUrl);
-				dpsMap.put(downloadUrl, dp);
-				return dpsMap;
-			} else if (downloadUrl == null && !fileName.contains(".github")) {
-				dpsMap = getModelsFromGithub(webUrl + "/" + fileName, dpsMap);
-			}
-		}
-		return dpsMap;
-	}
-	*/
 
 	public void writeParameters(TextArea info) {
 		if (params == null) {
@@ -110,15 +82,6 @@ public class DeepImageJ {
 		}
 		info.append("----------- BASIC INFO -----------\n");
 		info.append("Name: " + params.name + "\n");
-		/* TODO remove
-		 * info.append(checks.get(0) + "\n");
-		// TODO remove
-		if (checks.size() == 2) {
-			info.append("Size: " + checks.get(1).substring(18) + "\n");
-		} else {
-			info.append("Size: " + FileTools.getFolderSizeKb(path + "variables") + "\n");
-		}
-		 */
 		info.append("Authors" + "\n");
 		for (String auth : params.author)
 			info.append("  - " + auth + "\n");
@@ -132,23 +95,9 @@ public class DeepImageJ {
 		
 
 		info.append("------------ METADATA ------------\n");
-		info.append("Tag: " + params.tag + "\n");
-		info.append("Signature: " + params.graph + "\n");
 		info.append("Allow tiling: " + params.allowPatching + "\n");
 
 		info.append("Dimensions: ");
-		/* TODO remove
-		for (DijTensor inp : params.inputList) {
-			info.append(Arrays.toString(inp.tensor_shape));
-			int slices = 1;
-			int zInd = Index.indexOf(inp.form.split(""), "Z");
-			if (zInd != -1) {slices = inp.tensor_shape[zInd];}
-			int channels = 1;
-			int cInd = Index.indexOf(inp.form.split(""), "C");
-			if (cInd != -1) {channels = inp.tensor_shape[cInd];}
-			info.append(" Slices (" + slices + ") Channels (" + channels + ")\n");
-		}
-		*/
 		info.append("Input:");
 		for (DijTensor inp2 : params.inputList)
 			info.append(" " + inp2.name + " (" + inp2.form + ")");
@@ -157,25 +106,6 @@ public class DeepImageJ {
 		for (DijTensor out : params.outputList)
 			info.append(" " + out.name + " (" + out.form + ")");
 		info.append("\n");
-
-		info.append("------------ TEST INFO -----------\n");
-		info.append("Inputs:" + "\n");
-		for (DijTensor inp : params.inputList) {
-			info.append("  - Name: " + inp.exampleInput + "\n");
-			info.append("    Size: " + inp.inputTestSize + "\n");
-			info.append("      x: " + inp.inputPixelSizeX  + "\n");
-			info.append("      y: " + inp.inputPixelSizeY  + "\n");
-			info.append("      z: " + inp.inputPixelSizeZ  + "\n");			
-		}
-		info.append("Outputs:" + "\n");
-		for (HashMap<String, String> out : params.savedOutputs) {
-			// TODO Deicde info.append("  - Name: " + out.name + "\n");
-			info.append("  - Type: " + out.get("type") + "\n");
-			info.append("     Size: " + out.get("size")  + "\n");		
-		}
-		info.append("Memory peak: " + params.memoryPeak + "\n");
-		info.append("Runtime: " + params.runtime + "\n");
-		
 	}
 
 	// TODO remove
