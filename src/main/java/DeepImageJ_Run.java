@@ -41,11 +41,11 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Font;
 import java.awt.Label;
+import java.awt.Panel;
 import java.awt.TextArea;
 import java.awt.TextField;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -56,7 +56,6 @@ import deepimagej.Constants;
 import deepimagej.DeepImageJ;
 import deepimagej.Promise;
 import deepimagej.RunnerTf;
-import deepimagej.components.BorderPanel;
 import deepimagej.exceptions.JavaProcessingError;
 import deepimagej.exceptions.MacrosError;
 import deepimagej.processing.ProcessingBridge;
@@ -83,7 +82,6 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 	private Choice[]					choices		= new Choice[5];
 	private TextField[]	    			texts		= new TextField[2];
 	private Label[]						labels		= new Label[8];
-	static private String				path		= IJ.getDirectory("imagej") + File.separator + "models" + File.separator;
 	private String[]					processingFile = new String[2];
 	private Log							log			= new Log();
 	private int[]						patch;
@@ -94,16 +92,6 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 	private String[]					modelList;
 	private GenericDialog dlg;
 	private static Object modelLock;
-	
-	static public void main(String args[]) {
-		path = System.getProperty("user.home") + File.separator + "Google Drive" + File.separator + "ImageJ" + File.separator + "models" + File.separator;
-		path = "C:\\Users\\Carlos(tfg)\\Pictures\\Fiji.app\\models" + File.separator;
-		ImagePlus imp = IJ.openImage("C:\\Users\\Carlos(tfg)\\Pictures\\Fiji.app\\models\\Mask R-CNN\\exampleImage.tiff");
-		WindowManager.setTempCurrentImage(imp);
-		if (imp != null)
-			imp.show();
-		new DeepImageJ_Run().run("");
-	}
 
 	@Override
 	public void run(String arg) {
@@ -119,7 +107,7 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 		
 		info.setEditable(false);
 
-		BorderPanel panel = new BorderPanel();
+		Panel panel = new Panel();
 		panel.setLayout(new BorderLayout());
 		panel.add(info, BorderLayout.CENTER);
 
