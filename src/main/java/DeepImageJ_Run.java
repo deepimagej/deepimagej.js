@@ -107,7 +107,7 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 
 	@Override
 	public void run(String arg) {
-
+		IJ.log("It works!");
 		ImagePlus imp = WindowManager.getTempCurrentImage();
 		if (imp == null) {
 			imp = WindowManager.getCurrentImage();

@@ -4,8 +4,8 @@ mvn install:install-file -Dfile=${CHEERPJ_DIR}/cheerpj-dom.jar -DgroupId=com.lea
 mvn package
 
 
-cp target/DeepImageJ_-2.0.1-SNAPSHOT.jar ${IJ_DIR}/plugins
+cp target/DeepImageJ_JS_-2.0.1-SNAPSHOT.jar ${IJ_DIR}/plugins
 
 cd ${IJ_DIR}
-# java -jar ij-1.53f.jar
-${CHEERPJ_DIR}/cheerpjfy.py --deps=ij-1.53f.jar -j 4 plugins/DeepImageJ_-2.0.1-SNAPSHOT.jar
+# java -jar ij-1.53h.jar
+${CHEERPJ_DIR}/cheerpjfy.py --deps=ij-1.53h.jar -j 4 plugins/DeepImageJ_JS_-2.0.1-SNAPSHOT.jar
