@@ -37,25 +37,8 @@
 
 package deepimagej;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import javax.swing.JFrame;
-
-import deepimagej.components.CustomizedColumn;
-import deepimagej.components.CustomizedTable;
 import deepimagej.tools.DijTensor;
-import deepimagej.tools.FileTools;
 import deepimagej.tools.Index;
-import deepimagej.tools.Log;
-import deepimagej.tools.NumFormat;
-import ij.IJ;
 
 public class TensorFlowModel {
 
