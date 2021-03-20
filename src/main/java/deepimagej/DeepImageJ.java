@@ -46,15 +46,14 @@ import deepimagej.tools.DijTensor;
 
 public class DeepImageJ {
 
-	public Parameters				params;
+	public Parameters				params			= null;
 	private boolean					valid 			= true;
 	public ArrayList<String>		msgChecks		= new ArrayList<String>();
 	public ArrayList<String>		msgLoads		= new ArrayList<String>();
 	public ArrayList<String[]>		msgArchis		= new ArrayList<String[]>();
 	
-	public DeepImageJ(String raw) {
+	public DeepImageJ(String raw) throws Exception {
 		this.params = new Parameters(raw);
-		//this.valid = checkUser(p);
 	}
 
 	public boolean getValid() {
@@ -62,7 +61,12 @@ public class DeepImageJ {
 	}
 	
 	static public DeepImageJ ImjoyYaml2DijYaml(String raw) {
-		DeepImageJ dp = new DeepImageJ(raw);
+		DeepImageJ dp;
+		try {
+			dp = new DeepImageJ(raw);
+		} catch (Exception e) {
+			dp = null;
+		}
 		return dp;
 	}
 

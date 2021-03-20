@@ -42,7 +42,10 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import com.leaningtech.client.Global;
+
 import deepimagej.Parameters;
+import deepimagej.Promise;
 import deepimagej.exceptions.JavaProcessingError;
 import deepimagej.exceptions.MacrosError;
 import deepimagej.tools.DijTensor;
@@ -53,6 +56,8 @@ import ij.measure.ResultsTable;
 import ij.text.TextWindow;
 
 public class ProcessingBridge {
+	private static  String macro = "";
+	private static Object macroLock;
 	
 	// TODO decide whether to allow or not more than 1 image input to the model
 	public static HashMap<String, Object> runPreprocessing(ImagePlus im, Parameters params) throws MacrosError, JavaProcessingError {
@@ -118,7 +123,10 @@ public class ProcessingBridge {
 	private static ImagePlus runProcessingMacro(ImagePlus img, String macroPath, boolean developer) throws MacrosError {
 		WindowManager.setTempCurrentImage(img);
 
-		String aborted = IJ.runMacroFile(macroPath);
+		macro = "";
+		macro = getMacroImJoy(macroPath);
+		String aborted = IJ.runMacro(macro);
+		
 		if (aborted == "[aborted]") {
 			throw new MacrosError();
 		}
@@ -167,11 +175,45 @@ public class ProcessingBridge {
 	 * @throws MacrosError: thrown if the macro contains errors
 	 */
 	private static void runPostprocessingMacro(String macroPath) throws MacrosError {
-
-		String aborted = IJ.runMacroFile(macroPath);
+		// Initialise the macro to an empty string
+		macro = "";
+		macro = getMacroImJoy(macroPath);
+		String aborted = IJ.runMacro(macro);
 		if (aborted == "[aborted]") {
 			throw new MacrosError();
 		}
+	}
+	
+	/**
+	 * Get the content of the macro file using the ImJoy API
+	 * @param macroFile: name of the macro file
+	 * @return macro's content in a String
+	 */
+	private static String getMacroImJoy(String macroFile) {
+		macroLock = new Object();
+		// return a list of names (string)
+		Global.jsCall("callPlugin", "ImJoyModelRunner", "getFile", macroFile, new Promise(){
+			public void resolveString(String result){
+				System.out.println("Macro file:\n" + result);
+				macroLock.notify();
+				macro = result;
+			}
+			public void resolveImagePlus(ImagePlus result){
+				IJ.error("Cannot fetch the macro '" + macroFile + "' file specified in the model.yaml.");
+				macroLock.notify();
+			}
+			public void reject(String error){
+				IJ.error("Cannot fetch the macro '" + macroFile + "' file specified in the model.yaml: " + error);
+				macroLock.notify();
+			}
+		});
+		try {
+			macroLock.wait();
+		} catch (InterruptedException e) {
+			IJ.error("Cannot fetch the macro '" + macroFile + "' file specified in the model.yaml.");
+			System.out.println(e.toString());
+		}
+		return macro;
 	}
 	
 	/**************************

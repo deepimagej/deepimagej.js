@@ -1,0 +1,407 @@
+/*
+ * DeepImageJ
+ * 
+ * https://deepimagej.github.io/deepimagej/
+ *
+ * Conditions of use: You are free to use this software for research or educational purposes. 
+ * In addition, we expect you to include adequate citations and acknowledgments whenever you 
+ * present or publish results that are based on it.
+ * 
+ * Reference: DeepImageJ: A user-friendly plugin to run deep learning models in ImageJ
+ * E. Gomez-de-Mariscal, C. Garcia-Lopez-de-Haro, L. Donati, M. Unser, A. Munoz-Barrutia, D. Sage. 
+ * Submitted 2019.
+ *
+ * Bioengineering and Aerospace Engineering Department, Universidad Carlos III de Madrid, Spain
+ * Biomedical Imaging Group, Ecole polytechnique federale de Lausanne (EPFL), Switzerland
+ *
+ * Corresponding authors: mamunozb@ing.uc3m.es, daniel.sage@epfl.ch
+ *
+ */
+
+/*
+ * Copyright 2019. Universidad Carlos III, Madrid, Spain and EPFL, Lausanne, Switzerland.
+ * 
+ * This file is part of DeepImageJ.
+ * 
+ * DeepImageJ is free software: you can redistribute it and/or modify it under the terms of 
+ * the GNU General Public License as published by the Free Software Foundation, either 
+ * version 3 of the License, or (at your option) any later version.
+ * 
+ * DeepImageJ is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+ * See the GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License along with DeepImageJ. 
+ * If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package deepimagej.tools;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+
+public class YamlParser {
+	
+	private String rawYaml = "";
+	private String backUpRawYaml = "";
+	private HashMap<String, Object> yaml;
+	String separator;
+	
+	/**
+	 * Constructor that stores the String corresponding to the raw yaml
+	 * @param yaml: String corresponding to the raw yaml
+	 */
+	public YamlParser(String yaml) {
+		this.rawYaml = yaml;
+		this.backUpRawYaml = yaml;
+	}
+	public static void main(String[] args) throws Exception {
+		String raw = "format_version: 0.3.0\r\n" + 
+				"name: DEFCoN density map estimation\r\n" + 
+				"description: Density Estimation by Fully Convolutional Networks (DEFCoN) - A fluorescent spot counter for single molecule localization microscopy.\r\n" + 
+				"date: 2019\r\n" + 
+				"cite:\r\n" + 
+				"  - text: DEFCoN was written by Baptiste Ottino as a ey in the Laboratory of Experimental Biophysics.\r\n" + 
+				"    doi: Dphysics.\r\n" + 
+				"  - text: como la puñaladas cuando se creen que no lo veserimental Biophysics.\r\n" + 
+				"    doi: ental Biophysics.\r\n" + 
+				"authors:\r\n" + 
+				"  - Baptiste Ottino\r\n" + 
+				"  - Kyle M. Douglass\r\n" + 
+				"  - Suliana Manley\r\n" + 
+				"documentation: https://github.com/LEB-EPFL/DEFCoN-ImageJ/wiki.\r\n" + 
+				"covers: [./cover_image.jpg]\r\n" + 
+				"tags:\r\n" + 
+				"  - deepimagej\r\n" + 
+				"  - smlm\r\n" + 
+				"  - defcon\r\n" + 
+				"  - density estimation\r\n" + 
+				"license: BSD 3\r\n" + 
+				"language: Java\r\n" + 
+				"framework: Tensorflow\r\n" + 
+				"git_repo: https://github.com/LEB-EPFL/DEFCoN\r\n" + 
+				"weights:\r\n" + 
+				"  tensorflow_protobuffer:\r\n" + 
+				"    name: v1\r\n" + 
+				"    source: https://zenodo.org/record/4244821/files/defcon_density_map_estimation_tf_model.zip?download=1\r\n" + 
+				"    sha256: ea57590caefa41a493808420d5bc029d7b6c8ad8b1633d8feeb166a99d71f45d\r\n" + 
+				"    test_input:\r\n" + 
+				"      - ./exampleImage.tiff\r\n" + 
+				"    test_output:\r\n" + 
+				"      - ./resultImage.tiff\r\n" + 
+				"inputs:\r\n" + 
+				"  - name: raw\r\n" + 
+				"    axes: byxc\r\n" + 
+				"    data_type: float32\r\n" + 
+				"    data_range: [-inf, inf]\r\n" + 
+				"    shape:\r\n" + 
+				"      min: [1, 1, 1, 1]\r\n" + 
+				"      step: [0, 1, 1, 0]\r\n" + 
+				"    preprocessing:\r\n" + 
+				"      name: min_max_normalization\r\n" + 
+				"      kwargs:\r\n" + 
+				"        mode: fixed\r\n" + 
+				"        axes: xy\r\n" + 
+				"        min: 0.0\r\n" + 
+				"        max: 65535.0\r\n" + 
+				"outputs:\r\n" + 
+				"  - name: segmentation\r\n" + 
+				"    axes: byxc\r\n" + 
+				"    data_type: float32\r\n" + 
+				"    data_range: [0, 1]\r\n" + 
+				"    halo: [0, 10, 10, 0]\r\n" + 
+				"    shape:\r\n" + 
+				"      reference_input: raw\r\n" + 
+				"      scale: [1, 1, 1, 1]\r\n" + 
+				"      offset: [0, 0, 0, 0]\r\n" + 
+				"  - name: segmentation2\r\n" + 
+				"    axes: byxc\r\n" + 
+				"    data_type: float32\r\n" + 
+				"    data_range: [0, 1]\r\n" + 
+				"    halo: [0, 10, 10, 0]\r\n" + 
+				"    shape:\r\n" + 
+				"      reference_input: raw\r\n" + 
+				"      scale: [1, 1, 1, 1]\r\n" + 
+				"      offset: [0, 0, 0, 0]\r\n" + 
+				"config:\r\n" + 
+				"# custom config for DeepImageJ, see https://github.com/bioimage-io/configuration/issues/23\r\n" + 
+				"  deepimagej:\r\n" + 
+				"    pyramidal_model: false\r\n" + 
+				"    allow_tiling: true\r\n" + 
+				"    model_keys:\r\n" + 
+				"      model_tag: tf.saved_model.tag_constants.SERVING\r\n" + 
+				"      signature_definition: tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY\r\n" + 
+				"    test_information:\r\n" + 
+				"      inputs:\r\n" + 
+				"        - name: exampleImage.tiff\r\n" + 
+				"          size: 64 x 64 x 1 x 1\r\n" + 
+				"          pixel_size:\r\n" + 
+				"            x: 1 pixel\r\n" + 
+				"            y: 1 pixel\r\n" + 
+				"            z: 1.0 pixel\r\n" + 
+				"      outputs:\r\n" + 
+				"        - name: resultImage.tiff\r\n" + 
+				"          type: image\r\n" + 
+				"          size: 64 x 64 x 1 x 1\r\n" + 
+				"      memory_peak: 62.9 Mb\r\n" + 
+				"      runtime: 0.1 s\r\n" + 
+				"    prediction:\r\n" + 
+				"      preprocess:\r\n" + 
+				"      -   spec: ij.IJ::runMacroFile\r\n" + 
+				"          kwargs: preprocessing.txt\r\n" + 
+				"      postprocess:\r\n" + 
+				"      -   spec: ij.IJ::runMacroFile\r\n" + 
+				"          kwargs: postprocessing.txt";
+		System.out.print(raw);
+		YamlParser yml = new YamlParser(raw);
+		HashMap<String, Object> obj = yml.parseYaml();
+		System.out.print("jej");
+	}
+
+	/**
+	 * Obtain the yaml dictionary from a String
+	 * @return yaml dictionary
+	 * @throws Exception 
+	 */
+	public HashMap<String, Object> parseYaml() throws Exception {
+		rawYaml = backUpRawYaml;
+		yaml = new HashMap<String, Object>();
+		// Find out if the file was written using 
+		// Windows line end (\r\n) or Linux (\n)
+		
+		if (findOccurences(rawYaml, "\r\n") == findOccurences(rawYaml, "\n") && findOccurences(rawYaml, "\\n") == 0 && findOccurences(rawYaml, "\\r\n") == 0) {
+			separator = "\r\n";
+		} else {
+			separator = "\n";
+		}
+		if (rawYaml == null || rawYaml.contentEquals(""))
+			return null;
+		while (rawYaml.indexOf(separator) != -1) {
+			String line = rawYaml.substring(0, rawYaml.indexOf(separator));
+			// Remove from the rawYaml String the part that as already been read
+			rawYaml = rawYaml.substring(rawYaml.indexOf(separator) + separator.length());
+			// Ignore comments
+			if (line.trim().startsWith("#"))
+				continue;
+			
+			// Split the line into key and value
+			// Array with key and value
+			int colonInd = indToSplitKeyValue(line);
+			if (colonInd == -1)
+				throw new Exception();
+			String[] lineArr = new String[] {line.substring(0, colonInd), line.substring(colonInd + 1).trim()};
+			/// Key of a field in the yaml
+			String key = lineArr[0];
+			// Value
+			String value = lineArr[1];
+			
+			// The values can be either Strings, Arrays or HashMaps.
+			// Find out first whether it is a String or not
+			// If the value was not a String, the same line would be empty
+			if (value.trim().contentEquals("")) {
+				String valueType = isValueDictionaryOrArray();
+				if (valueType.contentEquals("hashmap")) {
+					yaml.put(key.trim(), getHashMap());
+				} else if (valueType.contentEquals("array")) {
+					yaml.put(key.trim(), getArray());
+				}
+			} else {
+				// Put the value and key in the yaml HashMap
+				yaml.put(key.trim(), value.trim());
+			}
+		}
+		return yaml;
+	}
+	
+	/**
+	 * Create array from the yaml
+	 * @return the array of values from the yaml
+	 * @throws Exception 
+	 */
+	public ArrayList<Object> getArray() throws Exception {
+		ArrayList<Object> arr = new ArrayList<Object>();
+		boolean sameSpaces = true;
+		int prevSpaces = -1;
+		while (rawYaml.indexOf(separator) != -1 && sameSpaces) {
+			String line = rawYaml.substring(0, rawYaml.indexOf(separator));
+			// Ignore the comments
+			if (line.trim().startsWith("#")) {
+				// Remove from the rawYaml String the part that as already been read
+				if (rawYaml.length() <= (rawYaml.indexOf(separator) + separator.length()))
+					rawYaml = "";
+				else
+					rawYaml = rawYaml.substring(rawYaml.indexOf(separator) + separator.length());
+				continue;
+			}
+			
+			// Get number of blank spaces at the beginning of the line
+			int nSpaces = getSpacesAtTheBegging(line);
+			if (prevSpaces != -1)
+				sameSpaces = (nSpaces == prevSpaces);
+			// If the spaces at the beginning change, stop the loop
+			if (!sameSpaces || !line.trim().startsWith("-"))
+				break;
+			prevSpaces = nSpaces;
+			// Remove from the rawYaml String the part that as already been read
+			if (rawYaml.length() <= (rawYaml.indexOf(separator) + separator.length()))
+				rawYaml = "";
+			else
+				rawYaml = rawYaml.substring(rawYaml.indexOf(separator) + separator.length());
+			// Ignore the spaces in the line, and the "-" that is always at the beginning of lists
+			// Also find out how many spaces are between "-" and the beginning of the line
+			line = line.trim();
+			int ogLen = line.length();
+			line = line.substring(1).trim();
+			int nLen = line.length();
+			// Split the line into key and value
+			// Array with key and value
+			int colonInd = indToSplitKeyValue(line);
+			if (line.substring(0, 1).contentEquals("- ")) {
+				throw new Exception("Yaml file does not allow an array inside another array");
+			} else if (colonInd != -1) {
+				HashMap<String, Object> mapVal = getHashMap(prevSpaces + ogLen - nLen);
+				mapVal.put(line.substring(0, colonInd), line.substring(colonInd + 1).trim());
+				arr.add(mapVal);
+			} else if(colonInd == -1) {
+				arr.add(line);
+			}
+		}
+		return arr;
+	}
+	
+	/**
+	 * Create HashMap from the yaml
+	 * @return the HashMap of values from the yaml
+	 * @throws Exception 
+	 */
+	public HashMap<String, Object> getHashMap() throws Exception {
+		return getHashMap(-1);
+	}
+	
+	/**
+	 * Create HashMap from the yaml
+	 * @return the HashMap of values from the yaml
+	 * @throws Exception 
+	 */
+	public HashMap<String, Object> getHashMap(int prevSpaces) throws Exception {
+		HashMap<String, Object> dict = new HashMap<String, Object>();
+		boolean sameSpaces = true;
+		while (rawYaml.indexOf(separator) != -1 && sameSpaces) {
+			String line = rawYaml.substring(0, rawYaml.indexOf(separator));
+			// Ignore the comments
+			if (line.trim().startsWith("#")) {
+				// Remove from the rawYaml String the part that as already been read
+				if (rawYaml.length() <= (rawYaml.indexOf(separator) + separator.length()))
+					rawYaml = "";
+				else
+					rawYaml = rawYaml.substring(rawYaml.indexOf(separator) + separator.length());
+				continue;
+			}
+			
+			// Get number of blank spaces at the beginning of the line
+			int nSpaces = getSpacesAtTheBegging(line);
+			if (prevSpaces != -1)
+				sameSpaces = (nSpaces == prevSpaces);
+			// If the spaces at the beginning change, stop the loop
+			if (!sameSpaces)
+				break;
+			prevSpaces = nSpaces;
+			// Remove from the rawYaml String the part that as already been read
+			if (rawYaml.length() <= (rawYaml.indexOf(separator) + separator.length()))
+				rawYaml = "";
+			else
+				rawYaml = rawYaml.substring(rawYaml.indexOf(separator) + separator.length());
+			// Ignore the spaces in the line
+			line = line.trim();
+			// Split the line into key and value
+			// Array with key and value
+			int colonInd = indToSplitKeyValue(line);
+			if (colonInd == -1)
+				throw new Exception();
+			String[] lineArr = new String[] {line.substring(0, colonInd), line.substring(colonInd + 1).trim()};
+			/// Key of a field in the yaml
+			String key = lineArr[0];
+			// Value
+			String value = lineArr[1];
+			
+			// The values can be either Strings, Arrays or HashMaps.
+			// Find out first whether it is a String or not
+			// If the value was not a String, the same line would be empty
+			if (value.trim().contentEquals("")) {
+				String valueType = isValueDictionaryOrArray();
+				if (valueType.contentEquals("hashmap")) {
+					dict.put(key.trim(), getHashMap());
+				} else if (valueType.contentEquals("array")) {
+					dict.put(key.trim(), getArray());
+				}
+			} else {
+				// Put the value and key in the yaml HashMap
+				dict.put(key.trim(), value.trim());
+			}
+		}
+		return dict;
+	}
+	
+	/**
+	 * Returns whether the value in the yaml is a hashmap or string
+	 * @return "array" if the value is an array or "hashmap" if it is a hashmap
+	 */
+	public String isValueDictionaryOrArray() {
+		// If the value is an array, the next line will start with "-"
+		String line = rawYaml.substring(0, rawYaml.indexOf(separator));
+		String type = "hashmap";
+		if (line.trim().startsWith("-")) {
+			type = "array";
+		}
+		return type;
+	}
+	
+	/**
+	 * Get the number of spaces at the beginning of a line
+	 * @param line: text to evaluate
+	 * @return number of spaces
+	 */
+	public static int getSpacesAtTheBegging(String line) {
+		boolean keepGoing = true;
+		String spaces = "";
+		while (keepGoing) {
+			spaces += " ";
+			keepGoing = line.startsWith(spaces);
+		}
+		return (spaces.length() - 1);
+	}
+
+	/**
+	 * Finds th colon character ':', which indicates where to split key and value
+	 * @param line
+	 * @return index of the colon in the line
+	 */
+	public static int indToSplitKeyValue(String line) {
+		int ind = line.indexOf(":");
+		if (ind == -1)
+			return ind;
+		// Find out whether the ":" character corresponds to a String,
+		// for example in the case --> title: "Best players ever: Messi and Ronaldo"
+		// one colon separates key and value and the other one is inside the value
+		int quoteInd = line.indexOf("\"");
+		if (quoteInd != -1 && quoteInd < ind) {
+			int secondQuote =  line.indexOf("\"", quoteInd);
+			if (secondQuote > ind) 
+				ind = -1;
+		}
+		return ind;
+	}
+	
+	/**
+	 * Find number of occurences of substring inside a String
+	 * @param s: string that contains substring
+	 * @param sub: substring to be counted in the string
+	 * @return number of occurences
+	 */
+	public static int findOccurences(String s, String sub) {
+		String temp = s.replace(sub, "");
+		int occ = (s.length() - temp.length()) / sub.length();
+		return occ;
+	}
+
+}

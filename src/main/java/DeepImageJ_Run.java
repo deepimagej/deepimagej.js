@@ -95,7 +95,7 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 
 	@Override
 	public void run(String arg) {
-		IJ.log("It works!");
+
 		ImagePlus imp = WindowManager.getTempCurrentImage();
 		if (imp == null) {
 			imp = WindowManager.getCurrentImage();
@@ -149,7 +149,7 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 		dlg.addStringField("Axes order", "", 30);
 		dlg.addStringField("Tile size", "", 30);
 		
-		dlg.addChoice("Logging", new String[] { "mute", "normal                                                       ", "verbose", "debug" }, "normal                                                       ");
+		dlg.addChoice("Logging", new String[] { "mute", "normal", "verbose", "debug" }, "normal");
 		
 		dlg.addHelp(Constants.url);
 		dlg.addPanel(panel);
@@ -227,24 +227,49 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 		dp.params.secondPreprocessing = null;
 		dp.params.firstPostprocessing = null;
 		dp.params.secondPostprocessing = null;
-		/*
+		
 		if (!processingFile[0].equals("no preprocessing")) {
-			if (dp.params.pre.get(processingFile[0]) != null && dp.params.pre.get(processingFile[0]).length > 0) {
-				dp.params.firstPreprocessing = dp.getPath() + File.separator + dp.params.pre.get(processingFile[0])[0];
+			String[] preprocArray = processingFile[0].substring(processingFile[0].indexOf("[") + 1, processingFile[0].lastIndexOf("]")).split(",");
+			dp.params.firstPreprocessing = preprocArray[0].trim();
+			if (!dp.params.firstPreprocessing.endsWith(".ijm") && !dp.params.firstPreprocessing.endsWith(".txt")) {
+				IJ.error("DeepImageJ on ImJoy only supports macro pre-processing (not Java).\n"
+						+ "Please select another pre-processing.");
+				run("");
+				return;
 			}
-			if(dp.params.pre.get(processingFile[0]) != null && dp.params.pre.get(processingFile[0]).length > 1) {
-				dp.params.secondPreprocessing = dp.getPath() + File.separator + dp.params.pre.get(processingFile[0])[1];
+			if (preprocArray.length > 1) {
+				dp.params.secondPreprocessing = preprocArray[1].trim();
+				if (!dp.params.secondPreprocessing.endsWith(".ijm") && !dp.params.secondPreprocessing.endsWith(".txt")) {
+					IJ.error("DeepImageJ on ImJoy only supports macro pre-processing (not Java).\n"
+							+ "Please select another pre-processing.");
+					run("");
+					return;
+				}
 			}
 		}
 		if (!processingFile[1].equals("no postprocessing")) {
-			if (dp.params.post.get(processingFile[1]) != null && dp.params.post.get(processingFile[1]).length > 0) {
-				dp.params.firstPostprocessing = dp.getPath() + File.separator + dp.params.post.get(processingFile[1])[0];
+			String[] postprocArray = processingFile[1].substring(processingFile[1].indexOf("[") + 1, processingFile[1].lastIndexOf("]")).split(",");
+			dp.params.firstPostprocessing = postprocArray[0].trim();
+			if (!dp.params.firstPostprocessing.endsWith(".ijm") && !dp.params.firstPostprocessing.endsWith(".txt")) {
+				IJ.error("DeepImageJ on ImJoy only supports macro post-processing (not Java).\n"
+						+ "Please select another post-processing.");
+				run("");
+				return;
 			}
-			if(dp.params.post.get(processingFile[1]) != null && dp.params.post.get(processingFile[1]).length > 1) {
-				dp.params.secondPostprocessing = dp.getPath() + File.separator + dp.params.post.get(processingFile[1])[1];
+			
+			if (postprocArray.length > 1) {
+				dp.params.secondPostprocessing = postprocArray[1].trim();
+				if (!dp.params.secondPostprocessing.endsWith(".ijm") && !dp.params.secondPostprocessing.endsWith(".txt")) {
+					IJ.error("DeepImageJ on ImJoy only supports macro post-processing (not Java).\n"
+							+ "Please select another post-processing.");
+					run("");
+					return;
+				}
 			}
 		}
-		*/
+		
+		
+		
 		String tensorForm = dp.params.inputList.get(0).form;
 		int[] tensorMin = dp.params.inputList.get(0).minimum_size;
 		int[] min = DijTensor.getWorkingDimValues(tensorForm, tensorMin); 
@@ -340,7 +365,7 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 				return;
 			}
 			rawYaml = null;
-			Global.jsCall("callPlugin", "ImJoyModelRunner", "getModelInfo", modelName,  new Promise(){
+			Global.jsCall("callPlugin", "ImJoyModelRunner", "getFile", "model.yaml",  new Promise(){
 				public void resolveString(String result){
 					rawYaml = result;
 					System.out.println(rawYaml);
@@ -349,6 +374,8 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 					
 					if (dp == null) {
 						setGUIOriginalParameters();
+						info.append("\nUnable to load model \"modelName\".\n");
+						info.append("DeepimageJ cannot read the model.yaml file.\n");
 						return;
 					}
 

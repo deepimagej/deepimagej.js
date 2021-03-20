@@ -163,7 +163,7 @@ public class RunnerTf {
 			// To define the runtime for config.xml. Starting time
 			long startingTime = System.nanoTime();
 			// Create the image that is going to be fed to the graph
-			ImagePlus[] impatch = new ImagePlus[outputImages.length];
+			final ImagePlus[] impatch = new ImagePlus[outputImages.length];
 			
 			String[] outputTitles = new String[params.outputList.size()];
 			// Reset the counter to 0 use it again
