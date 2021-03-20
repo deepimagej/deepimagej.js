@@ -40,6 +40,9 @@ package deepimagej.tools;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import deepimagej.Parameters;
+import ij.IJ;
+
 public class YamlParser {
 	
 	private String rawYaml = "";
@@ -56,103 +59,87 @@ public class YamlParser {
 		this.backUpRawYaml = yaml;
 	}
 	public static void main(String[] args) throws Exception {
-		String raw = "format_version: 0.3.0\r\n" + 
-				"name: DEFCoN density map estimation\r\n" + 
-				"description: Density Estimation by Fully Convolutional Networks (DEFCoN) - A fluorescent spot counter for single molecule localization microscopy.\r\n" + 
-				"date: 2019\r\n" + 
-				"cite:\r\n" + 
-				"  - text: DEFCoN was written by Baptiste Ottino as a ey in the Laboratory of Experimental Biophysics.\r\n" + 
-				"    doi: Dphysics.\r\n" + 
-				"  - text: como la puñaladas cuando se creen que no lo veserimental Biophysics.\r\n" + 
-				"    doi: ental Biophysics.\r\n" + 
-				"authors:\r\n" + 
-				"  - Baptiste Ottino\r\n" + 
-				"  - Kyle M. Douglass\r\n" + 
-				"  - Suliana Manley\r\n" + 
-				"documentation: https://github.com/LEB-EPFL/DEFCoN-ImageJ/wiki.\r\n" + 
-				"covers: [./cover_image.jpg]\r\n" + 
-				"tags:\r\n" + 
-				"  - deepimagej\r\n" + 
-				"  - smlm\r\n" + 
-				"  - defcon\r\n" + 
-				"  - density estimation\r\n" + 
-				"license: BSD 3\r\n" + 
-				"language: Java\r\n" + 
-				"framework: Tensorflow\r\n" + 
-				"git_repo: https://github.com/LEB-EPFL/DEFCoN\r\n" + 
-				"weights:\r\n" + 
-				"  tensorflow_protobuffer:\r\n" + 
-				"    name: v1\r\n" + 
-				"    source: https://zenodo.org/record/4244821/files/defcon_density_map_estimation_tf_model.zip?download=1\r\n" + 
-				"    sha256: ea57590caefa41a493808420d5bc029d7b6c8ad8b1633d8feeb166a99d71f45d\r\n" + 
-				"    test_input:\r\n" + 
-				"      - ./exampleImage.tiff\r\n" + 
-				"    test_output:\r\n" + 
-				"      - ./resultImage.tiff\r\n" + 
-				"inputs:\r\n" + 
-				"  - name: raw\r\n" + 
-				"    axes: byxc\r\n" + 
-				"    data_type: float32\r\n" + 
-				"    data_range: [-inf, inf]\r\n" + 
-				"    shape:\r\n" + 
-				"      min: [1, 1, 1, 1]\r\n" + 
-				"      step: [0, 1, 1, 0]\r\n" + 
-				"    preprocessing:\r\n" + 
-				"      name: min_max_normalization\r\n" + 
-				"      kwargs:\r\n" + 
-				"        mode: fixed\r\n" + 
-				"        axes: xy\r\n" + 
-				"        min: 0.0\r\n" + 
-				"        max: 65535.0\r\n" + 
-				"outputs:\r\n" + 
-				"  - name: segmentation\r\n" + 
-				"    axes: byxc\r\n" + 
-				"    data_type: float32\r\n" + 
-				"    data_range: [0, 1]\r\n" + 
-				"    halo: [0, 10, 10, 0]\r\n" + 
-				"    shape:\r\n" + 
-				"      reference_input: raw\r\n" + 
-				"      scale: [1, 1, 1, 1]\r\n" + 
-				"      offset: [0, 0, 0, 0]\r\n" + 
-				"  - name: segmentation2\r\n" + 
-				"    axes: byxc\r\n" + 
-				"    data_type: float32\r\n" + 
-				"    data_range: [0, 1]\r\n" + 
-				"    halo: [0, 10, 10, 0]\r\n" + 
-				"    shape:\r\n" + 
-				"      reference_input: raw\r\n" + 
-				"      scale: [1, 1, 1, 1]\r\n" + 
-				"      offset: [0, 0, 0, 0]\r\n" + 
-				"config:\r\n" + 
-				"# custom config for DeepImageJ, see https://github.com/bioimage-io/configuration/issues/23\r\n" + 
-				"  deepimagej:\r\n" + 
-				"    pyramidal_model: false\r\n" + 
-				"    allow_tiling: true\r\n" + 
-				"    model_keys:\r\n" + 
-				"      model_tag: tf.saved_model.tag_constants.SERVING\r\n" + 
-				"      signature_definition: tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY\r\n" + 
-				"    test_information:\r\n" + 
-				"      inputs:\r\n" + 
-				"        - name: exampleImage.tiff\r\n" + 
-				"          size: 64 x 64 x 1 x 1\r\n" + 
-				"          pixel_size:\r\n" + 
-				"            x: 1 pixel\r\n" + 
-				"            y: 1 pixel\r\n" + 
-				"            z: 1.0 pixel\r\n" + 
-				"      outputs:\r\n" + 
-				"        - name: resultImage.tiff\r\n" + 
-				"          type: image\r\n" + 
-				"          size: 64 x 64 x 1 x 1\r\n" + 
-				"      memory_peak: 62.9 Mb\r\n" + 
-				"      runtime: 0.1 s\r\n" + 
-				"    prediction:\r\n" + 
-				"      preprocess:\r\n" + 
-				"      -   spec: ij.IJ::runMacroFile\r\n" + 
-				"          kwargs: preprocessing.txt\r\n" + 
-				"      postprocess:\r\n" + 
-				"      -   spec: ij.IJ::runMacroFile\r\n" + 
+		String raw = "\n"
+				+ "format_version: 0.3.0\n" + 
+				"name: M2Unet\n" + 
+				"description: A light-weight Unet.\n" + 
+				"date: 2019\n" + 
+				"cite:\n" + 
+				"authors:\n" + 
+				"  - Wei Ouyang\n" + 
+				"documentation: \n" + 
+				"covers: []\n" + 
+				"tags:\n" + 
+				"  - unet\n" + 
+				"  - deepimagej\n" + 
+				"license: BSD 3\n" + 
+				"language: Java\n" + 
+				"framework: Tensorflow\n" + 
+				"git_repo: \n" + 
+				"weights:\n" + 
+				"  tensorflow_protobuffer:\n" + 
+				"    name: v1\n" + 
+				"    source: https://zenodo.org/record/4244821/files/defcon_density_map_estimation_tf_model.zip?download=1\n" + 
+				"    sha256: ea57590caefa41a493808420d5bc029d7b6c8ad8b1633d8feeb166a99d71f45d\n" + 
+				"    test_input:\n" + 
+				"      - ./exampleImage.tiff\n" + 
+				"    test_output:\n" + 
+				"      - ./resultImage.tiff\n" + 
+				"inputs:\n" + 
+				"  - name: raw\n" + 
+				"    axes: byxc\n" + 
+				"    data_type: float32\n" + 
+				"    data_range: [-inf, inf]\n" + 
+				"    shape:\n" + 
+				"      min: [1, 1, 1, 1]\n" + 
+				"      step: [0, 1, 1, 0]\n" + 
+				"    preprocessing:\n" + 
+				"      name: min_max_normalization\n" + 
+				"      kwargs:\n" + 
+				"        mode: fixed\n" + 
+				"        axes: xy\n" + 
+				"        min: 0.0\n" + 
+				"        max: 65535.0\n" + 
+				"outputs:\n" + 
+				"  - name: segmentation\n" + 
+				"    axes: byxc\n" + 
+				"    data_type: float32\n" + 
+				"    data_range: [0, 1]\n" + 
+				"    halo: [0, 10, 10, 0]\n" + 
+				"    shape:\n" + 
+				"      reference_input: raw\n" + 
+				"      scale: [1, 1, 1, 1]\n" + 
+				"      offset: [0, 0, 0, 0]\n" + 
+				"config:\n" + 
+				"  deepimagej:\n" + 
+				"    pyramidal_model: false\n" + 
+				"    allow_tiling: true\n" + 
+				"    model_keys:\n" + 
+				"      model_tag: tf.saved_model.tag_constants.SERVING\n" + 
+				"      signature_definition: tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY\n" + 
+				"    test_information:\n" + 
+				"      inputs:\n" + 
+				"        - name: exampleImage.tiff\n" + 
+				"          size: 64 x 64 x 1 x 1\n" + 
+				"          pixel_size:\n" + 
+				"            x: 1 pixel\n" + 
+				"            y: 1 pixel\n" + 
+				"            z: 1.0 pixel\n" + 
+				"      outputs:\n" + 
+				"        - name: resultImage.tiff\n" + 
+				"          type: image\n" + 
+				"          size: 64 x 64 x 1 x 1\n" + 
+				"      memory_peak: 62.9 Mb\n" + 
+				"      runtime: 0.1 s\n" + 
+				"    prediction:\n" + 
+				"      preprocess:\n" + 
+				"      -   spec: ij.IJ::runMacroFile\n" + 
+				"          kwargs: preprocessing.txt\n" + 
+				"      postprocess:\n" + 
+				"      -   spec: ij.IJ::runMacroFile\n" + 
 				"          kwargs: postprocessing.txt";
 		System.out.print(raw);
+		Parameters pp = new Parameters(raw);
 		YamlParser yml = new YamlParser(raw);
 		HashMap<String, Object> obj = yml.parseYaml();
 		System.out.print("jej");
@@ -168,12 +155,13 @@ public class YamlParser {
 		yaml = new HashMap<String, Object>();
 		// Find out if the file was written using 
 		// Windows line end (\r\n) or Linux (\n)
-		
 		if (findOccurences(rawYaml, "\r\n") == findOccurences(rawYaml, "\n") && findOccurences(rawYaml, "\\n") == 0 && findOccurences(rawYaml, "\\r\n") == 0) {
 			separator = "\r\n";
 		} else {
 			separator = "\n";
 		}
+		if (!rawYaml.endsWith(separator))
+			rawYaml += separator;
 		if (rawYaml == null || rawYaml.contentEquals(""))
 			return null;
 		while (rawYaml.indexOf(separator) != -1) {
@@ -181,7 +169,7 @@ public class YamlParser {
 			// Remove from the rawYaml String the part that as already been read
 			rawYaml = rawYaml.substring(rawYaml.indexOf(separator) + separator.length());
 			// Ignore comments
-			if (line.trim().startsWith("#"))
+			if (line.trim().startsWith("#") || line.equals(""))
 				continue;
 			
 			// Split the line into key and value
@@ -198,13 +186,18 @@ public class YamlParser {
 			// The values can be either Strings, Arrays or HashMaps.
 			// Find out first whether it is a String or not
 			// If the value was not a String, the same line would be empty
-			if (value.trim().contentEquals("")) {
+			boolean sameSpaces = (getSpacesAtTheBegging(line) == getSpacesAtTheBegging(rawYaml));
+			boolean startsWithDash = rawYaml.startsWith("-");
+			if (value.trim().contentEquals("") && (!sameSpaces || startsWithDash)) {
 				String valueType = isValueDictionaryOrArray();
 				if (valueType.contentEquals("hashmap")) {
 					yaml.put(key.trim(), getHashMap());
 				} else if (valueType.contentEquals("array")) {
 					yaml.put(key.trim(), getArray());
 				}
+			} else if (value.trim().contentEquals("")){
+				// Put the value as null, this is an error in the yaml
+				yaml.put(key.trim(), null);
 			} else {
 				// Put the value and key in the yaml HashMap
 				yaml.put(key.trim(), value.trim());

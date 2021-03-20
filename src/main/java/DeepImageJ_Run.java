@@ -371,10 +371,9 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 					System.out.println(rawYaml);
 					dp = null;
 					dp = DeepImageJ.ImjoyYaml2DijYaml(rawYaml);
-					
 					if (dp == null) {
 						setGUIOriginalParameters();
-						info.append("\nUnable to load model \"modelName\".\n");
+						info.append("\nUnable to load model \"" + modelName + "\".\n");
 						info.append("DeepimageJ cannot read the model.yaml file.\n");
 						return;
 					}
@@ -405,7 +404,7 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 					}
 					if (choices[2].getItemCount() == 0)
 						choices[2].addItem("no preprocessing");
-					
+
 					for (String p : postKeys) {
 						if (dp.params.post.get(p) != null)
 							choices[3].addItem(Arrays.toString(dp.params.post.get(p)));
@@ -425,7 +424,7 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 					int[] step = DijTensor.getWorkingDimValues(tensorForm, tensorStep); 
 					int[] haloVals = DijTensor.getWorkingDimValues(tensorForm, haloSize); 
 					String[] dim = DijTensor.getWorkingDims(tensorForm);
-					
+
 					HashMap<String, String> letterDefinition = new HashMap<String, String>();
 					letterDefinition.put("X", "width");
 					letterDefinition.put("Y", "height");

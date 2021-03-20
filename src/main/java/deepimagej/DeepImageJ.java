@@ -65,6 +65,7 @@ public class DeepImageJ {
 		try {
 			dp = new DeepImageJ(raw);
 		} catch (Exception e) {
+			System.out.println(e.toString());
 			dp = null;
 		}
 		return dp;
