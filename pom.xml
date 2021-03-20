@@ -10,7 +10,7 @@
 	</parent>
 
 	<groupId>io.github.deepimagej</groupId>
-	<artifactId>DeepImageJ_JS_</artifactId>
+	<artifactId>DeepImageJ_</artifactId>
 	<version>2.0.1-SNAPSHOT</version>
 
 	<name>DeepImageJ</name>
@@ -28,72 +28,6 @@
 		</license>
 	</licenses>
 
-	
-	<build>
-		<plugins>
-			<plugin>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>default-compile</id>
-						<configuration>
-							<!-- compile everything to ensure module-info contains right entries -->
-							<!-- required when JAVA_HOME is JDK 8 or below -->
-							<jdkToolchain>
-								<version>9</version>
-							</jdkToolchain>
-							<!-- Exclude MacAdapter because it requires internal packages -->
-							<excludes>
-								<exclude>**/MacAdapter.java</exclude>
-							</excludes>
-			
-						</configuration>
-					</execution>
-					<execution>
-						<id>complete-recompile</id>
-						<goals>
-							<goal>compile</goal>
-						</goals>
-						<!-- recompile everything for target VM except the module-info.java -->
-						<configuration>
-							<excludes>
-								<exclude>**/module-info.java</exclude>
-							</excludes>
-
-							<!-- Force recompilation. NB: This is the stupidest bug ever.
-								See https://issues.apache.org/jira/browse/MCOMPILER-209
-							-->
-							<useIncrementalCompilation>true</useIncrementalCompilation>
-						</configuration>
-					</execution>
-				</executions>
-				<!-- defaults for compile and testCompile -->
-				<configuration>
-					<!-- jdkToolchain required when JAVA_HOME is JDK 9 or above -->
-					<jdkToolchain>
-						<version>[1.6,8)</version>
-					</jdkToolchain>
-					<source>1.8</source>
-					<target>1.8</target>
-				</configuration>
-			</plugin>
-			<plugin>
-				<artifactId>maven-javadoc-plugin</artifactId>
-				<configuration>
-					<!-- Avoid failing due to IJ1 javadoc errors -->
-					<doclint>none</doclint>
-
-					<!-- Required to build with Java 11+
-					     See https://bugs.openjdk.java.net/browse/JDK-8212233
-					 -->
-					<source>8</source>
-					<links>
-						<link>https://imagej.nih.gov/ij/developer/api/</link>
-					</links>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
 	<developers>
 		<developer>
 			<id>esgomezm</id>
@@ -201,7 +135,7 @@ Universidad Carlos III de Madrid.</license.copyrightOwners>
 		<dependency>
 			<groupId>net.imagej</groupId>
 			<artifactId>ij</artifactId>
-			<version>1.53g</version>
+			<version>1.53h</version>
 		</dependency>
 		<dependency>
 			<groupId>com.learningtech</groupId>
