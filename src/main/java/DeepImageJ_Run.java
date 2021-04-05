@@ -365,7 +365,7 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 				return;
 			}
 			rawYaml = null;
-			Global.jsCall("callPlugin", "ImJoyModelRunner", "getFile", "model.yaml",  new Promise(){
+			Global.jsCall("callPlugin", "ImJoyModelRunner", "initModel", modelName,  new Promise(){
 				public void resolveString(String result){
 					rawYaml = result;
 					System.out.println(rawYaml);
