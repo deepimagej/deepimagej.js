@@ -47,7 +47,6 @@ import com.leaningtech.client.Global;
 import deepimagej.Parameters;
 import deepimagej.Promise;
 import deepimagej.exceptions.JavaProcessingError;
-import deepimagej.exceptions.MacrosError;
 import deepimagej.tools.DijTensor;
 import ij.IJ;
 import ij.ImagePlus;
@@ -61,7 +60,7 @@ public class ProcessingBridge {
 	private static Object macroRunLock;
 	
 	// TODO decide whether to allow or not more than 1 image input to the model
-	public static HashMap<String, Object> runPreprocessing(ImagePlus im, Parameters params) throws MacrosError, JavaProcessingError {
+	public static HashMap<String, Object> runPreprocessing(ImagePlus im, Parameters params) throws JavaProcessingError {
 		HashMap<String, Object> map = new HashMap<String, Object>();
 		params.javaPreprocessingClass = new ArrayList<String>();
 		// Assume that the image selected will result in the input image to the model
@@ -121,7 +120,7 @@ public class ProcessingBridge {
 		return map;
 	}
 
-	private static ImagePlus runPreprocessingMacro(ImagePlus img, String macroPath, boolean developer) throws MacrosError {
+	private static ImagePlus runPreprocessingMacro(ImagePlus img, String macroPath, boolean developer) {
 		WindowManager.setTempCurrentImage(img);
 
 		macro = "";
@@ -160,10 +159,9 @@ public class ProcessingBridge {
 	 * @param map: hashmap containing all the outputs given by the model. The keys are the names 
 	 * 	given by the model to each of the outputs. And the values are either ImagePlus or ResultsTable.
 	 * @return map: map containing all the paths to the processing files
-	 * @throws MacrosError is thrown if the Macro file does not work
 	 * @throws JavaProcessingError 
 	 */
-	public static HashMap<String, Object> runPostprocessing(Parameters params, HashMap<String, Object> map) throws MacrosError, JavaProcessingError {
+	public static HashMap<String, Object> runPostprocessing(Parameters params, HashMap<String, Object> map) throws JavaProcessingError {
 
 		params.javaPostprocessingClass = new ArrayList<String>();
 		
@@ -187,9 +185,8 @@ public class ProcessingBridge {
 	 * Method to run a macro processing routine over the outputs of the model. 
 	 * @param macroPath: path to the macro file
 	 * @return: last image processed by the file
-	 * @throws MacrosError: thrown if the macro contains errors
 	 */
-	private static void runPostprocessingMacro(String macroPath) throws MacrosError {
+	private static void runPostprocessingMacro(String macroPath) {
 		// Initialise the macro to an empty string
 		macro = "";
 		macro = getMacroImJoy(macroPath);
