@@ -58,6 +58,7 @@ import ij.text.TextWindow;
 public class ProcessingBridge {
 	private static  String macro = "";
 	private static Object macroLock;
+	private static Object macroRunLock;
 	
 	// TODO decide whether to allow or not more than 1 image input to the model
 	public static HashMap<String, Object> runPreprocessing(ImagePlus im, Parameters params) throws MacrosError, JavaProcessingError {
@@ -67,13 +68,13 @@ public class ProcessingBridge {
 		// Assumes 'im' will be the input to the model
 		map.put(params.inputList.get(0).name, im);
 		if (params.firstPreprocessing != null && (params.firstPreprocessing.contains(".txt") || params.firstPreprocessing.contains(".ijm"))) {
-			im = runProcessingMacro(im, params.firstPreprocessing, params.developer);
+			im = runPreprocessingMacro(im, params.firstPreprocessing, params.developer);
 			map = manageInputs(map, false, params, im);
 		}
 		
 
 		if (params.secondPreprocessing != null && (params.secondPreprocessing.contains(".txt") || params.secondPreprocessing.contains(".ijm"))) {
-			im = runProcessingMacro(im, params.secondPreprocessing, params.developer);
+			im = runPreprocessingMacro(im, params.secondPreprocessing, params.developer);
 			map = manageInputs(map, true,  params, im);
 		} else if (params.secondPreprocessing == null && (params.firstPreprocessing == null || params.firstPreprocessing.contains(".txt") || params.firstPreprocessing.contains(".ijm"))) {
 			map = manageInputs(map, true, params);
@@ -120,15 +121,29 @@ public class ProcessingBridge {
 		return map;
 	}
 
-	private static ImagePlus runProcessingMacro(ImagePlus img, String macroPath, boolean developer) throws MacrosError {
+	private static ImagePlus runPreprocessingMacro(ImagePlus img, String macroPath, boolean developer) throws MacrosError {
 		WindowManager.setTempCurrentImage(img);
 
 		macro = "";
 		macro = getMacroImJoy(macroPath);
-		String aborted = IJ.runMacro(macro);
-		
-		if (aborted == "[aborted]") {
-			throw new MacrosError();
+		macroRunLock = new Object();
+		Global.jsCall("callPlugin", "ImJoyModelRunner", "runIJMacro", macro, new Promise(){
+			public void resolveString(String result){
+				macroRunLock.notify();
+			}
+			public void resolveImagePlus(ImagePlus result){
+				macroRunLock.notify();
+			}
+			public void reject(String error){
+				IJ.error("Error during pre-processing: "+error);
+				macroRunLock.notify();
+			}
+		});
+		try {
+			macroRunLock.wait();
+		} catch (InterruptedException e) {
+			IJ.error("Pre-processing macro could not be executed.");
+			return null;
 		}
 		
 		ImagePlus result = WindowManager.getCurrentImage();
@@ -178,9 +193,23 @@ public class ProcessingBridge {
 		// Initialise the macro to an empty string
 		macro = "";
 		macro = getMacroImJoy(macroPath);
-		String aborted = IJ.runMacro(macro);
-		if (aborted == "[aborted]") {
-			throw new MacrosError();
+		macroRunLock = new Object();
+		Global.jsCall("callPlugin", "ImJoyModelRunner", "runIJMacro", macro, new Promise(){
+			public void resolveString(String result){
+				macroRunLock.notify();
+			}
+			public void resolveImagePlus(ImagePlus result){
+				macroRunLock.notify();
+			}
+			public void reject(String error){
+				IJ.error("Error during post-processing: "+error);
+				macroRunLock.notify();
+			}
+		});
+		try {
+			macroRunLock.wait();
+		} catch (InterruptedException e) {
+			IJ.error("Post-processing macro could not be executed.");
 		}
 	}
 	
