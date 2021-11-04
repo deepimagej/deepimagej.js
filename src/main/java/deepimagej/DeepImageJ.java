@@ -42,7 +42,9 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import deepimagej.tools.ArrayOperations;
 import deepimagej.tools.DijTensor;
+import deepimagej.tools.FileTools;
 
 public class DeepImageJ {
 
@@ -51,7 +53,7 @@ public class DeepImageJ {
 	public ArrayList<String>		msgChecks		= new ArrayList<String>();
 	public ArrayList<String>		msgLoads		= new ArrayList<String>();
 	public ArrayList<String[]>		msgArchis		= new ArrayList<String[]>();
-	
+		
 	public DeepImageJ(String raw) throws Exception {
 		this.params = new Parameters(raw);
 	}
@@ -76,32 +78,49 @@ public class DeepImageJ {
 			info.append("No params\n");
 			return;
 		}
-		info.append("----------- BASIC INFO -----------\n");
-		info.append("Name: " + params.name + "\n");
+		info.append("---------- MODEL INFO ----------\n");
 		info.append("Authors" + "\n");
-		for (String auth : params.author)
-			info.append("  - " + auth + "\n");
+		for (HashMap<String, String> auth : params.author) {
+			String name = auth.get("name") == null ? "n/a" : auth.get("name");
+			String aff = auth.get("affiliation") == null ? "n/a" : auth.get("affiliation");
+			String orcid = auth.get("orcid") == null ? "n/a" : auth.get("orcid");
+			info.append("  - Name: " + name + "\n");
+			info.append("    Affiliation: " + aff + "\n");
+			info.append("    Orcid: " + orcid + "\n");
+		}
 		info.append("References" + "\n");
-		// TODO robustness
 		for (HashMap<String, String> ref : params.cite) {
-			info.append("  - Text: " + ref.get("text") + "\n");
+			info.append("  - Article: " + ref.get("text") + "\n");
 			info.append("    Doi: " + ref.get("doi") + "\n");
 		}
-		info.append("Framework:" + params.framework + "\n");
+		info.append("Framework: " + params.framework + "\n");
 		
-
-		info.append("------------ METADATA ------------\n");
+		if (params.framework.contains("tensorflow")) {
+			info.append("Tag: " + params.tag + "\n");
+			info.append("Signature: " + params.graph + "\n");
+		}
 		info.append("Allow tiling: " + params.allowPatching + "\n");
 
-		info.append("Dimensions: ");
-		info.append("Input:");
-		for (DijTensor inp2 : params.inputList)
-			info.append(" " + inp2.name + " (" + inp2.form + ")");
 		info.append("\n");
-		info.append("Output:");
-		for (DijTensor out : params.outputList)
-			info.append(" " + out.name + " (" + out.form + ")");
-		info.append("\n");
+
+		info.append("------------ TEST INFO -----------\n");
+		info.append("Inputs:" + "\n");
+		for (DijTensor inp : params.inputList) {
+			info.append("  - Name: " + inp.exampleInput + "\n");
+			info.append("    Size: " + inp.inputTestSize + "\n");
+			info.append("      x: " + inp.inputPixelSizeX  + "\n");
+			info.append("      y: " + inp.inputPixelSizeY  + "\n");
+			info.append("      z: " + inp.inputPixelSizeZ  + "\n");			
+		}
+		info.append("Outputs:" + "\n");
+		for (HashMap<String, String> out : params.savedOutputs) {
+			info.append("  - Name: " + out.get("name") + "\n");
+			info.append("  - Type: " + out.get("type") + "\n");
+			info.append("     Size: " + out.get("size")  + "\n");		
+		}
+		info.append("Memory peak: " + params.memoryPeak + "\n");
+		info.append("Runtime: " + params.runtime + "\n");
+		
 	}
 	
 	/*
