@@ -237,16 +237,14 @@ public class RunnerTf {
 			}
 
 			log.print("start " + npx + "x" + npy);
+			
 			for (int i = 0; i < npx; i++) {
 				for (int j = 0; j < npy; j++) {
 					for (int z = 0; z < npz; z++) {
 						// TODO reduce this mega big loop to something more modular
 						currentPatch++;
-						log.print("currentPatch " + currentPatch);
-						// if (rp.isStopped()) {
-						// 	rp.stop();
-						// 	return null;
-						// }
+						if (log.getLevel() >= 1)
+							log.print("currentPatch " + currentPatch);
 						// Variables to track when the roi starts in the mirror image
 						int xMirrorStartPatch;
 						int yMirrorStartPatch;
@@ -304,6 +302,8 @@ public class RunnerTf {
 							leftoverPixelsZ = overlapZ + roiZ- (zImageEndPatch - zImageStartPatch);
 						}
 						
+						// TODO mirar en profundidad. Que pasa cuando el mirror no es igual de grande que le patch
+						// Observé que se compensaba erroneamente
 						ImagePlus patch = ArrayOperations.extractPatch(mirrorImage, patchSize, xMirrorStartPatch, yMirrorStartPatch,
 																		zMirrorStartPatch, overlapX, overlapY, overlapZ);
 						log.print("Extract Patch (" + (i + 1) + ", " + (j + 1) + ") patch size: " + patch.getWidth() + "x" + patch.getHeight() + " pixels");
@@ -311,7 +311,6 @@ public class RunnerTf {
 							patch.setTitle("Patch (" + i + "," + j + ")");
 							patch.getProcessor().resetMinAndMax();
 						}
-						
 						// TODO for the moment we assume one input / one output
 						runModelLock = new Object();
 						// Call the ImJoyModelRunner from the ImJoy API to run the TF model
@@ -323,6 +322,8 @@ public class RunnerTf {
 							}
 							public void resolveImagePlus(ImagePlus output){
 								// do postprocessing here with the output
+								output.setTitle("RAW OUTPUT");
+								output.show();
 								impatch[0] = output;
 								runModelLock.notify();
 							}
@@ -481,6 +482,8 @@ public class RunnerTf {
 		String[] form = "XYCZ".split("");
 		int c1 = 0;
 		for (DijTensor out: outputs) {
+			if (!out.tensorType.toLowerCase().equals("image"))
+				continue;
 			int c2 = 0;
 			for (int i = 0; i < offsets[0].length; i ++) {
 				int ind = Index.indexOf(out.form.split(""), form[i]);

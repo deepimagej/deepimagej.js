@@ -172,7 +172,7 @@ public class ProcessingBridge {
 		
 
 		if (params.secondPostprocessing != null && (params.secondPostprocessing.contains(".txt") || params.secondPostprocessing.contains(".ijm"))) {
-			runPostprocessingMacro(params.firstPreprocessing);
+			runPostprocessingMacro(params.secondPostprocessing);
 			map = manageOutputs();
 		} else if (params.secondPreprocessing == null && (params.firstPostprocessing == null || params.firstPostprocessing.contains(".jar") || new File(params.firstPostprocessing).isDirectory())) {
 			map = manageOutputs();

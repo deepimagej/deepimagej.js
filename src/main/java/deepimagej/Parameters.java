@@ -174,7 +174,7 @@ public class Parameters {
 	 *  Parameters providing ModelInformation
 	 */
 	public String		name					= "n.a.";
-	public List<String>	author					= new ArrayList<String>();
+	public List<HashMap<String, String>>	author					= new ArrayList<HashMap<String, String>>();
 	public String		timestamp				= "";
 	public String		format_version			= "0.3.0";
 	/*
@@ -273,20 +273,41 @@ public class Parameters {
 			completeConfig = false;
 			return;
 		}
-		if (obj.get("authors") instanceof List) {
-			author = (List<String>) obj.get("authors");
+		// Adapt to versions 0.3.2, 0.3.1 and 0.3.0 of the yaml file
+		// 0.3.2 provides a list of dictionaries
+		if (obj.get("authors") instanceof List &&  ((List<Object>) obj.get("authors")).get(0) instanceof HashMap) {
+			author = (List<HashMap<String, String>>) obj.get("authors");
+		// 0.3.0 and 0.3.1 provide a list of Strings
+		} else if (obj.get("authors") instanceof List &&  ((List<Object>) obj.get("authors")).get(0) instanceof String) {
+			List<String> auxList = (List<String>) obj.get("authors");
+			author = new ArrayList<HashMap<String, String>>();
+			for (String element : auxList) {
+				HashMap<String, String> auxMap = new HashMap<String, String>();
+				auxMap.put("name", element);
+				auxMap.put("affiliation", null);
+				auxMap.put("orcid", null);
+				author.add(auxMap);
+			}
+			
+		// Python Dij packager provides a String
 		} else if (obj.get("authors") instanceof String) {
 			String aux = "" + obj.get("authors");
-			author = new ArrayList<String>();
-			author.add(aux);
+			HashMap<String, String> auxMap = new HashMap<String, String>();
+			auxMap.put("name", aux);
+			auxMap.put("affiliation", "");
+			auxMap.put("orcid", "");
+			author = new ArrayList<HashMap<String, String>>();
+			author.add(auxMap);
+		// If nothing is recognised
 		} else {
-			
+			HashMap<String, String> auxMap = new HashMap<String, String>();
+			auxMap.put("name", "n/a");
+			auxMap.put("affiliation", "");
+			auxMap.put("orcid", "");
+			author = new ArrayList<HashMap<String, String>>();
+			author.add(auxMap);
 		}
 		timestamp = "" +  obj.get("timestamp");
-		if (author == null) {
-			author = new ArrayList<String>();
-			author.add("n/a");
-		}
 
 		// Citation
 		if (!(cite instanceof List))

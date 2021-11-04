@@ -160,6 +160,8 @@ public class YamlParser {
 		} else {
 			separator = "\n";
 		}
+		// REmove empty lines
+		rawYaml= rawYaml.replaceAll("(?m)^[ \\t]*\\r?\\n","");
 		if (!rawYaml.endsWith(separator))
 			rawYaml += separator;
 		if (rawYaml == null || rawYaml.contentEquals(""))
@@ -252,9 +254,22 @@ public class YamlParser {
 			if (line.substring(0, 1).contentEquals("- ")) {
 				throw new Exception("Yaml file does not allow an array inside another array");
 			} else if (colonInd != -1) {
-				HashMap<String, Object> mapVal = getHashMap(prevSpaces + ogLen - nLen);
-				mapVal.put(line.substring(0, colonInd), line.substring(colonInd + 1).trim());
-				arr.add(mapVal);
+				String key = line.substring(0, colonInd).trim();
+				String value = line.substring(colonInd + 1).trim();
+				if (!value.contentEquals("")) {
+					HashMap<String, Object> mapVal = getHashMap(prevSpaces + ogLen - nLen);
+					mapVal.put(key, value);
+					arr.add(mapVal);
+				} else if(getSpacesAtTheBegging(rawYaml) == (prevSpaces + ogLen - nLen)) {
+					HashMap<String, Object> mapVal = getHashMap(prevSpaces + ogLen - nLen);
+					mapVal.put(key, null);
+					arr.add(mapVal);
+				} else {
+					HashMap<String, Object>mapVal1 = getHashMap();
+					HashMap<String, Object> mapVal2 = getHashMap(prevSpaces + ogLen - nLen);
+					mapVal2.put(key, mapVal1);
+					arr.add(mapVal2);
+				}
 			} else if(colonInd == -1) {
 				arr.add(line);
 			}
@@ -281,6 +296,7 @@ public class YamlParser {
 		boolean sameSpaces = true;
 		while (rawYaml.indexOf(separator) != -1 && sameSpaces) {
 			String line = rawYaml.substring(0, rawYaml.indexOf(separator));
+			
 			// Ignore the comments
 			if (line.trim().startsWith("#")) {
 				// Remove from the rawYaml String the part that as already been read
@@ -320,13 +336,19 @@ public class YamlParser {
 			// The values can be either Strings, Arrays or HashMaps.
 			// Find out first whether it is a String or not
 			// If the value was not a String, the same line would be empty
-			if (value.trim().contentEquals("")) {
+			int nextSpaces = getSpacesAtTheBegging(rawYaml);
+			boolean nextStartWithDash = rawYaml.trim().startsWith("-");
+			if (value.trim().contentEquals("") && 
+					(nextSpaces > prevSpaces || (nextSpaces == prevSpaces && nextStartWithDash))) {
 				String valueType = isValueDictionaryOrArray();
 				if (valueType.contentEquals("hashmap")) {
 					dict.put(key.trim(), getHashMap());
 				} else if (valueType.contentEquals("array")) {
 					dict.put(key.trim(), getArray());
 				}
+			} else if(value.trim().contentEquals("")) {
+				// Put the value and key in the yaml HashMap
+				dict.put(key.trim(), null);
 			} else {
 				// Put the value and key in the yaml HashMap
 				dict.put(key.trim(), value.trim());
