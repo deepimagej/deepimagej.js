@@ -26,5 +26,8 @@ IJ_DIR=$(pwd)/dist/ij153
 cp target/DeepImageJ_JS_-2.0.1-SNAPSHOT.jar ${IJ_DIR}/plugins
 
 cd ${IJ_DIR}
+# remove plugins/DeepImageJ_JS_-2.0.1-SNAPSHOT.jar if exists
+rm -f plugins/DeepImageJ_JS_-2.0.1-SNAPSHOT.jar
+
 # java -jar ij-1.53h.jar
 ${CHEERPJ_DIR}/cheerpjfy.py --deps=ij-1.53h.jar -j 4 plugins/DeepImageJ_JS_-2.0.1-SNAPSHOT.jar
