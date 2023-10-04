@@ -19,13 +19,13 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.8
-      - name: Compile ImageJ.JS
+      - name: Compile deepImageJ.js
         run: bash compile-js.sh
       - uses: meeDamian/github-release@2.0
-        if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/main'
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag: 1.53m
-          name: ImageJ.JS
+          tag: "2.0.1"
+          name: deepImageJ.js
           files: dist/plugins/DeepImageJ_JS_-2.0.1-SNAPSHOT.jar
           allow_override: true
