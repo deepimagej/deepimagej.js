@@ -41,18 +41,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import deepimagej.Parameters;
-import ij.IJ;
 
 public class YamlParser {
 	
 	private String rawYaml = "";
 	private String backUpRawYaml = "";
-	private HashMap<String, Object> yaml;
+	private LinkedHashMap<String, Object> yaml;
 	String separator;
 	
 	/**
@@ -149,8 +147,8 @@ public class YamlParser {
 		String yamlPath = "C:\\Users\\angel\\OneDrive\\Documentos\\pasteur\\git"
 				+ "\\model-runner-java\\models\\B. Sutilist bacteria segmentation -"
 				+ " Widefield microscopy - 2D UNet_08092023_182317\\rdf.yaml";
-		yamlPath = "C:\\Users\\angel\\OneDrive\\Documentos\\pasteur\\git\\model"
-				+ "-runner-java\\models\\StarDist H&E Nuclei Segmentation_06092023_020924\\rdf.yaml";
+		//yamlPath = "C:\\Users\\angel\\OneDrive\\Documentos\\pasteur\\git\\model"
+			//	+ "-runner-java\\models\\StarDist H&E Nuclei Segmentation_06092023_020924\\rdf.yaml";
 		Path path = Paths.get(yamlPath);
 
         List<String> yamlLines = Files.readAllLines(path);
@@ -158,7 +156,7 @@ public class YamlParser {
         String raw = String.join(System.lineSeparator(), yamlLines);
 		Parameters pp = new Parameters(raw);
 		YamlParser yml = new YamlParser(raw);
-		HashMap<String, Object> obj = yml.parseYaml();
+		LinkedHashMap<String, Object> obj = yml.parseYaml();
 		System.out.print("jej");
 	}
 
@@ -167,9 +165,9 @@ public class YamlParser {
 	 * @return yaml dictionary
 	 * @throws Exception 
 	 */
-	public HashMap<String, Object> parseYaml() throws Exception {
+	public LinkedHashMap<String, Object> parseYaml() throws Exception {
 		rawYaml = backUpRawYaml;
-		yaml = new HashMap<String, Object>();
+		yaml = new LinkedHashMap<String, Object>();
 		// Find out if the file was written using 
 		// Windows line end (\r\n) or Linux (\n)
 		if (findOccurences(rawYaml, "\r\n") == findOccurences(rawYaml, "\n") && findOccurences(rawYaml, "\\n") == 0 && findOccurences(rawYaml, "\\r\n") == 0) {
@@ -210,7 +208,7 @@ public class YamlParser {
 			if (value.trim().contentEquals("") && (!sameSpaces || startsWithDash)) {
 				String valueType = isValueDictionaryOrArray();
 				if (valueType.contentEquals("hashmap")) {
-					yaml.put(key.trim(), getHashMap());
+					yaml.put(key.trim(), getMap());
 				} else if (valueType.contentEquals("array")) {
 					yaml.put(key.trim(), getArray());
 				}
@@ -274,16 +272,16 @@ public class YamlParser {
 				String key = line.substring(0, colonInd).trim();
 				String value = line.substring(colonInd + 1).trim();
 				if (!value.contentEquals("")) {
-					HashMap<String, Object> mapVal = getHashMap(prevSpaces + ogLen - nLen);
+					LinkedHashMap<String, Object> mapVal = getMap(prevSpaces + ogLen - nLen);
 					mapVal.put(key, value);
 					arr.add(mapVal);
 				} else if(getSpacesAtTheBegging(rawYaml) == (prevSpaces + ogLen - nLen)) {
-					HashMap<String, Object> mapVal = getHashMap(prevSpaces + ogLen - nLen);
+					LinkedHashMap<String, Object> mapVal = getMap(prevSpaces + ogLen - nLen);
 					mapVal.put(key, null);
 					arr.add(mapVal);
 				} else {
-					HashMap<String, Object>mapVal1 = getHashMap();
-					HashMap<String, Object> mapVal2 = getHashMap(prevSpaces + ogLen - nLen);
+					LinkedHashMap<String, Object>mapVal1 = getMap();
+					LinkedHashMap<String, Object> mapVal2 = getMap(prevSpaces + ogLen - nLen);
 					mapVal2.put(key, mapVal1);
 					arr.add(mapVal2);
 				}
@@ -297,12 +295,12 @@ public class YamlParser {
 	}
 	
 	/**
-	 * Create HashMap from the yaml
+	 * Create Map from the yaml
 	 * @return the HashMap of values from the yaml
 	 * @throws Exception 
 	 */
-	public HashMap<String, Object> getHashMap() throws Exception {
-		return getHashMap(-1);
+	public LinkedHashMap<String, Object> getMap() throws Exception {
+		return getMap(-1);
 	}
 	
 	/**
@@ -310,8 +308,8 @@ public class YamlParser {
 	 * @return the HashMap of values from the yaml
 	 * @throws Exception 
 	 */
-	public HashMap<String, Object> getHashMap(int prevSpaces) throws Exception {
-		HashMap<String, Object> dict = new HashMap<String, Object>();
+	public LinkedHashMap<String, Object> getMap(int prevSpaces) throws Exception {
+		LinkedHashMap<String, Object> dict = new LinkedHashMap<String, Object>();
 		boolean sameSpaces = true;
 		while (rawYaml.indexOf(separator) != -1 && sameSpaces) {
 			String line = rawYaml.substring(0, rawYaml.indexOf(separator));
@@ -361,7 +359,7 @@ public class YamlParser {
 					(nextSpaces > prevSpaces || (nextSpaces == prevSpaces && nextStartWithDash))) {
 				String valueType = isValueDictionaryOrArray();
 				if (valueType.contentEquals("hashmap")) {
-					dict.put(key.trim(), getHashMap());
+					dict.put(key.trim(), getMap());
 				} else if (valueType.contentEquals("array")) {
 					dict.put(key.trim(), getArray());
 				}
