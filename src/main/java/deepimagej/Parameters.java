@@ -58,7 +58,6 @@ import java.util.Map;
 import java.util.Set;
 
 import deepimagej.tools.DijTensor;
-import deepimagej.tools.YAMLUtils;
 import deepimagej.tools.YamlParser;
 import deepimagej.tools.weights.ModelWeight;
 import ij.ImagePlus;
@@ -306,7 +305,7 @@ public class Parameters {
 	 */
 	public ModelWeight weights;
 	
-	public Parameters(String raw) {
+	public Parameters(String raw) throws Exception {
 		YamlParser yml = new YamlParser(raw);
 		HashMap<String, Object> obj = yml.parseYaml();
 		// Until every parameter is checked complete config is false
