@@ -37,8 +37,13 @@
 
 package deepimagej.tools;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import deepimagej.Parameters;
 import ij.IJ;
@@ -59,6 +64,7 @@ public class YamlParser {
 		this.backUpRawYaml = yaml;
 	}
 	public static void main(String[] args) throws Exception {
+		/*
 		String raw = "\n"
 				+ "format_version: 0.3.0\n" + 
 				"name: M2Unet\n" + 
@@ -139,6 +145,17 @@ public class YamlParser {
 				"      -   spec: ij.IJ::runMacroFile\n" + 
 				"          kwargs: postprocessing.txt";
 		System.out.print(raw);
+		*/
+		String yamlPath = "C:\\Users\\angel\\OneDrive\\Documentos\\pasteur\\git"
+				+ "\\model-runner-java\\models\\B. Sutilist bacteria segmentation -"
+				+ " Widefield microscopy - 2D UNet_08092023_182317\\rdf.yaml";
+		yamlPath = "C:\\Users\\angel\\OneDrive\\Documentos\\pasteur\\git\\model"
+				+ "-runner-java\\models\\StarDist H&E Nuclei Segmentation_06092023_020924\\rdf.yaml";
+		Path path = Paths.get(yamlPath);
+
+        List<String> yamlLines = Files.readAllLines(path);
+        
+        String raw = String.join(System.lineSeparator(), yamlLines);
 		Parameters pp = new Parameters(raw);
 		YamlParser yml = new YamlParser(raw);
 		HashMap<String, Object> obj = yml.parseYaml();
@@ -251,7 +268,7 @@ public class YamlParser {
 			// Split the line into key and value
 			// Array with key and value
 			int colonInd = indToSplitKeyValue(line);
-			if (line.substring(0, 1).contentEquals("- ")) {
+			if (line.length() > 0 && line.substring(0, 1).contentEquals("- ")) {
 				throw new Exception("Yaml file does not allow an array inside another array");
 			} else if (colonInd != -1) {
 				String key = line.substring(0, colonInd).trim();
@@ -270,6 +287,8 @@ public class YamlParser {
 					mapVal2.put(key, mapVal1);
 					arr.add(mapVal2);
 				}
+			} else if(line.length() == 0 && colonInd == -1) {
+				arr.add(null);
 			} else if(colonInd == -1) {
 				arr.add(line);
 			}
