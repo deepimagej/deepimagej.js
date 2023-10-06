@@ -1,2 +1,52 @@
-target
+### Java ###
+# Compiled class files
+*.class
+
+# Log files
+*.log
+
+# Package Files #
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+### Maven ###
+# Ignore everything in the target directory
+target/
+
+# Ignore compiled bytecode files
+**/*.class
+
+# Ignore dependency directories
+.mvn/
+mvnw
+mvnw.cmd
+
+### IDE ###
+# Ignore project files created by Eclipse, IntelliJ, and NetBeans
+.classpath
+.project
+.settings/
+.idea/
+*.iml
+nbproject/
+build/
+
+### OS ###
+# Ignore OS generated files
+.DS_Store
+Thumbs.db
+
+### Other ###
+# Ignore other files and directories
+bin/
+*.bak
+*.swp
+*.swo
+
+
 dist
