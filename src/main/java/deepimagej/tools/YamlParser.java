@@ -192,8 +192,11 @@ public class YamlParser {
 			// Split the line into key and value
 			// Array with key and value
 			int colonInd = indToSplitKeyValue(line);
-			if (colonInd == -1)
-				throw new Exception();
+			if (colonInd == -1) {
+				String lastKey = (String) yaml.keySet().toArray()[yaml.size() - 1];
+				yaml.put(lastKey, yaml.get(lastKey).toString() + System.lineSeparator() + line);
+				continue;
+			}
 			String[] lineArr = new String[] {line.substring(0, colonInd), line.substring(colonInd + 1).trim()};
 			/// Key of a field in the yaml
 			String key = lineArr[0];
