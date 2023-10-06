@@ -80,7 +80,7 @@ public class RunnerTf {
 			// if (log.getLevel() >= 1)
 				// rp.setVisible(true);
 	
-			Parameters2 params = dp.params;
+			Parameters params = dp.params;
 			ImagePlus imp = null;
 			// Auxiliary array with the same number of images as output tensors
 			int c = 0;

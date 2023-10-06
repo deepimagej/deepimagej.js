@@ -58,7 +58,6 @@ import deepimagej.Promise;
 import deepimagej.RunnerTf;
 import deepimagej.exceptions.JavaProcessingError;
 import deepimagej.exceptions.MacrosError;
-import deepimagej.processing.ProcessingBridge;
 import deepimagej.tools.ArrayOperations;
 import deepimagej.tools.DijTensor;
 import deepimagej.tools.Index;
@@ -418,11 +417,11 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 					int[] tensorMin = dp.params.inputList.get(0).minimum_size;
 					// Step if the size is not fixed, 0s if it is
 					int[] tensorStep = dp.params.inputList.get(0).step;
-					int[] haloSize = ArrayOperations.findTotalPadding(dp.params.inputList.get(0), dp.params.outputList, dp.params.pyramidalNetwork);
+					float[] haloSize = ArrayOperations.findTotalPadding(dp.params.inputList.get(0), dp.params.outputList, dp.params.pyramidalNetwork);
 					int[] dimValue = DijTensor.getWorkingDimValues(tensorForm, tensorPatch); 
 					int[] min = DijTensor.getWorkingDimValues(tensorForm, tensorMin); 
 					int[] step = DijTensor.getWorkingDimValues(tensorForm, tensorStep); 
-					int[] haloVals = DijTensor.getWorkingDimValues(tensorForm, haloSize); 
+					float[] haloVals = DijTensor.getWorkingDimValues(tensorForm, haloSize); 
 					String[] dim = DijTensor.getWorkingDims(tensorForm);
 
 					HashMap<String, String> letterDefinition = new HashMap<String, String>();
@@ -458,7 +457,8 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 					info.append("\n");
 					info.append("Each dimension is calculated as:\n");
 					info.append("  - tile_size = minimum_size + step * n, where n is any positive integer\n");
-					String optimalPatch = ArrayOperations.optimalPatch(dimValue, haloVals, dim, step, min, dp.params.allowPatching);
+					String testSize = dp.params.inputList.get(0).inputTestSize;
+					String optimalPatch = ArrayOperations.optimalPatch(haloVals, dim, step, min, testSize, dp.params.allowPatching);
 					info.append("\n");
 					info.append("Default tile_size for this model: " + optimalPatch + "\n");
 					info.append("\n");
@@ -516,7 +516,8 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 			
 			WindowManager.setTempCurrentImage(inp);
 			log.print("start preprocessing");
-			HashMap<String, Object> inputsMap = ProcessingBridge.runPreprocessing(inp, dp.params);
+			HashMap<String, Object> inputsMap = new HashMap<String, Object>();
+			inputsMap.put(dp.params.inputList.get(0).name, inp);
 			im.setTitle(correctTitle);
 			runStage ++;
 			if (inputsMap.keySet().size() == 0)
@@ -537,7 +538,6 @@ public class DeepImageJ_Run implements PlugIn, ItemListener {
 			if (output == null) 
 				throw new Exception();
 			runStage ++;
-			output = ProcessingBridge.runPostprocessing(dp.params, output);
 
 			// Print the outputs of the postprocessing
 			// Retrieve the opened windows and compare them to what the model has outputed

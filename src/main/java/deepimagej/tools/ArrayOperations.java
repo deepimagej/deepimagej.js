@@ -289,20 +289,23 @@ public class ArrayOperations {
 		return patch;
 	}
 	
-	public static int[] findTotalPadding(DijTensor input, List<DijTensor> outputs, boolean pyramidal) {
+	public static float[] findTotalPadding(DijTensor input, List<DijTensor> outputs, boolean pyramidal) {
 		// Create an object of int[] that contains the output dimensions
 		// of each patch.
 		// This dimensions are always in the form of the input
 		String[] targetForm = input.form.split("");
-		int[] padding = new int[targetForm.length];
+		float[] padding = new float[targetForm.length];
 		if (!pyramidal) {
 			for (DijTensor out: outputs) {
 				if (out.tensorType.contains("image") && !Arrays.equals(out.scale, new float[out.scale.length])) {
 					for (int i = 0; i < targetForm.length; i ++) {
 						int ind = Index.indexOf(out.form.split(""), targetForm[i]);
-						if (ind != -1 && !targetForm[i].equals("b") && (out.offset[ind] + out.halo[ind]) > padding[i])  {
-							padding[i] = out.offset[ind] + out.halo[ind];
+						if (ind != -1 && !targetForm[i].toLowerCase().equals("b")  && !targetForm[i].toLowerCase().equals("c") && (out.offset[ind] + out.halo[ind]) > padding[i])  {
+							padding[i] = -1 * out.offset[ind] + out.halo[ind];
 						}
+						// Only allow offsets that can be divided by 0.5
+						if (out.offset[ind] % 0.5 != 0)
+							return null;
 					}
 				}
 			}
@@ -318,10 +321,39 @@ public class ArrayOperations {
 	 * Regard that it might be too memory consuming for some 
 	 * computers/images.
 	 */
-	public static String optimalPatch(int[] patchSizeArr, int[] haloArr, String[] dimCharArr, int[] stepArr, int[] minArr, boolean allowPatch) {
+	public static String optimalPatch(float[] haloArr, String[] dimCharArr, int[] stepArr, int[] minArr, boolean allowPatch) {
 
 		ImagePlus imp = WindowManager.getCurrentImage();
-		return optimalPatch(imp, patchSizeArr, haloArr, dimCharArr, stepArr, minArr, allowPatch);
+		return optimalPatch(imp, haloArr, dimCharArr, stepArr, minArr, null, allowPatch);
+			
+	}
+
+	/*
+	 * This method looks for the optimal patch size regarding the
+	 * minimum size, step, halo and image size. The optimal patch
+	 * is regarded as the smallest possible patch that allows 
+	 * processing the image as a whole in only one run.
+	 * Regard that it might be too memory consuming for some 
+	 * computers/images.
+	 */
+	public static String optimalPatch(ImagePlus imp, float[] haloArr, String[] dimCharArr, int[] stepArr, int[] minArr, boolean allowPatch) {
+
+		return optimalPatch(imp, haloArr, dimCharArr, stepArr, minArr, null, allowPatch);
+			
+	}
+
+	/*
+	 * This method looks for the optimal patch size regarding the
+	 * minimum size, step, halo and image size. The optimal patch
+	 * is regarded as the smallest possible patch that allows 
+	 * processing the image as a whole in only one run.
+	 * Regard that it might be too memory consuming for some 
+	 * computers/images.
+	 */
+	public static String optimalPatch(float[] haloArr, String[] dimCharArr, int[] stepArr, int[] minArr, String testSize, boolean allowPatch) {
+
+		ImagePlus imp = WindowManager.getCurrentImage();
+		return optimalPatch(imp, haloArr, dimCharArr, stepArr, minArr, testSize, allowPatch);
 			
 	}
 
@@ -333,16 +365,21 @@ public class ArrayOperations {
 		 * Regard that it might be too memory consuming for some 
 		 * computers/images.
 		 */
-		public static String optimalPatch(ImagePlus imp, int[] patchSizeArr, int[] haloArr, String[] dimCharArr, int[] stepArr, int[] minArr, boolean allowPatch) {
+	public static String optimalPatch(ImagePlus imp, float[] haloArr, String[] dimCharArr, int[] stepArr, int[] minArr, String testSize, boolean allowPatch) {
 			
 		String patch = "";
-		for (int ii = 0; ii < patchSizeArr.length; ii ++) {
+		for (int ii = 0; ii < haloArr.length; ii ++) {
 			String dimChar = dimCharArr[ii];
-			int halo = haloArr[ii];
+			float halo = haloArr[ii];
 			int min = minArr[ii];
-			int patchSize = patchSizeArr[ii];
 			int step = stepArr[ii];
-			if (imp == null ) {
+			// If there is no image, return the test tile size specified in the yaml if there is any
+			if (imp == null && testSize != null && !testSize.contentEquals("")) {
+				return getTestTileSize(testSize, dimCharArr);
+			} else if (imp == null && step != 0 && (dimChar.contentEquals("X") || dimChar.contentEquals("Y"))) {
+				patch += "auto,";
+				continue;
+			} else if (imp == null && step == 0) {
 				patch += min + ",";
 				continue;
 			}
@@ -377,12 +414,43 @@ public class ArrayOperations {
 				patch += "auto,";
 			} else if (step == 0){
 				patch += min + ",";
-			} else if (patchSize != 0){
-				patch += patchSize + ",";
 			}
 		}
 		patch = patch.substring(0, patch.length() - 1);
 		return patch;
+	}		
+	
+	/**
+	 * Find the tile size used during testing and reformats it following
+	 * the axes order
+	 * @param tileYaml: raw String coming form the yaml file at: conig->
+	 * 					deepimagej->test_information->inputs->size
+	 * @param axes: the axes of the model
+	 * @return tile size in a the format used by DIJ Run
+	 */
+public static String getTestTileSize(String tileYaml, String[] axes) {
+	String tileString = "";
+	String[] tile = tileYaml.toLowerCase().split("x");
+	String auxAxes = Arrays.toString(axes);
+	String axesTestFormat = "";
+	if (tile.length == 5) {
+		axesTestFormat = "xyczt";
+	} else if (tile.length == 4) {
+		axesTestFormat = "xycz";
+	} else if (!auxAxes.toLowerCase().contains("c") && auxAxes.toLowerCase().contains("z") && tile.length == 3) {
+		axesTestFormat = "xyz";
+	} else if (!auxAxes.toLowerCase().contains("z") && auxAxes.toLowerCase().contains("c") && tile.length == 3) {
+		axesTestFormat = "xyc";
+	} else if (!auxAxes.toLowerCase().contains("z") && !auxAxes.toLowerCase().contains("c") && tile.length == 3) {
+		axesTestFormat = "xyc";
+	} else if (!auxAxes.toLowerCase().contains("z") && !auxAxes.toLowerCase().contains("c") && tile.length == 2) {
+		axesTestFormat = "xy";
 	}
+	for (int i = 0; i < axes.length; i ++)
+		tileString += tile[axesTestFormat.indexOf(axes[i].toLowerCase())].trim() + ",";
+	// Remove last comma
+	tileString = tileString.substring(0, tileString.length() - 1);
+	return tileString;
+}
 
 }

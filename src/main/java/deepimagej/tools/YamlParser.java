@@ -44,7 +44,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 
-import deepimagej.Parameters2;
+import deepimagej.Parameters;
 
 public class YamlParser {
 	
@@ -154,7 +154,7 @@ public class YamlParser {
         List<String> yamlLines = Files.readAllLines(path);
         
         String raw = String.join(System.lineSeparator(), yamlLines);
-		Parameters2 pp = new Parameters2(raw);
+		Parameters pp = new Parameters(raw);
 		YamlParser yml = new YamlParser(raw);
 		LinkedHashMap<String, Object> obj = yml.parseYaml();
 		System.out.print("jej");
