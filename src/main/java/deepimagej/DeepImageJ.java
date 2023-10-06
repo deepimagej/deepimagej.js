@@ -48,14 +48,14 @@ import deepimagej.tools.FileTools;
 
 public class DeepImageJ {
 
-	public Parameters				params			= null;
+	public Parameters2				params			= null;
 	private boolean					valid 			= true;
 	public ArrayList<String>		msgChecks		= new ArrayList<String>();
 	public ArrayList<String>		msgLoads		= new ArrayList<String>();
 	public ArrayList<String[]>		msgArchis		= new ArrayList<String[]>();
 		
 	public DeepImageJ(String raw) throws Exception {
-		this.params = new Parameters(raw);
+		this.params = new Parameters2(raw);
 	}
 
 	public boolean getValid() {

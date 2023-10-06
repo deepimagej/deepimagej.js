@@ -111,7 +111,7 @@ public class TensorFlowModel {
 		return nChannels;
 	}
 	
-	public static String hSize(Parameters params, String inputForm) {
+	public static String hSize(Parameters2 params, String inputForm) {
 		// Find the number of channels in the input
 		String nChannels;
 		int ind = Index.indexOf(inputForm.split(""), "Y");
@@ -124,7 +124,7 @@ public class TensorFlowModel {
 		return nChannels;
 	}
 	
-	public static String wSize(Parameters params, String inputForm) {
+	public static String wSize(Parameters2 params, String inputForm) {
 		// Find the number of channels in the input
 		String nChannels;
 		int ind = Index.indexOf(inputForm.split(""), "X");

@@ -44,7 +44,7 @@ import java.util.HashMap;
 
 import com.leaningtech.client.Global;
 
-import deepimagej.Parameters;
+import deepimagej.Parameters2;
 import deepimagej.Promise;
 import deepimagej.exceptions.JavaProcessingError;
 import deepimagej.tools.DijTensor;
@@ -60,7 +60,7 @@ public class ProcessingBridge {
 	private static Object macroRunLock;
 	
 	// TODO decide whether to allow or not more than 1 image input to the model
-	public static HashMap<String, Object> runPreprocessing(ImagePlus im, Parameters params) throws JavaProcessingError {
+	public static HashMap<String, Object> runPreprocessing(ImagePlus im, Parameters2 params) throws JavaProcessingError {
 		HashMap<String, Object> map = new HashMap<String, Object>();
 		params.javaPreprocessingClass = new ArrayList<String>();
 		// Assume that the image selected will result in the input image to the model
@@ -83,7 +83,7 @@ public class ProcessingBridge {
 		return map;
 	}
 	
-	private static HashMap<String, Object> manageInputs(HashMap<String, Object> map, boolean lastStep, Parameters params){
+	private static HashMap<String, Object> manageInputs(HashMap<String, Object> map, boolean lastStep, Parameters2 params){
 		 map = manageInputs(map, lastStep, params, null);
 		 return map;
 	}
@@ -95,7 +95,7 @@ public class ProcessingBridge {
 	 * the main image, where if it is not named correctly, assumes it is the originally referenced
 	 * image (line 62).
 	 */
-	private static HashMap<String, Object> manageInputs(HashMap<String, Object> map, boolean lastStep, Parameters params, ImagePlus im) {
+	private static HashMap<String, Object> manageInputs(HashMap<String, Object> map, boolean lastStep, Parameters2 params, ImagePlus im) {
 		for (DijTensor tensor : params.inputList) {
 			if (tensor.tensorType == "image") {
 				ImagePlus inputImage = WindowManager.getImage(tensor.name);
@@ -161,7 +161,7 @@ public class ProcessingBridge {
 	 * @return map: map containing all the paths to the processing files
 	 * @throws JavaProcessingError 
 	 */
-	public static HashMap<String, Object> runPostprocessing(Parameters params, HashMap<String, Object> map) throws JavaProcessingError {
+	public static HashMap<String, Object> runPostprocessing(Parameters2 params, HashMap<String, Object> map) throws JavaProcessingError {
 
 		params.javaPostprocessingClass = new ArrayList<String>();
 		
