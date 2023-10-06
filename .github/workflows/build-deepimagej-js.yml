@@ -27,5 +27,5 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: "2.0.1"
           name: deepImageJ.js
-          files: dist/ij153/plugins/DeepImageJ_JS_-2.0.1-SNAPSHOT.jar
+          files: dist/ij153/plugins/DeepImageJ_JS_-2.0.1-SNAPSHOT.jar dist/ij153/plugins/DeepImageJ_JS_-2.0.1-SNAPSHOT.jar.js dist/ij153/plugins/DeepImageJ_JS_-2.0.1-SNAPSHOT.jar.config
           allow_override: true
