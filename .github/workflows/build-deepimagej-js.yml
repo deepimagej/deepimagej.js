@@ -21,11 +21,13 @@ jobs:
           java-version: 1.8
       - name: Compile deepImageJ.js
         run: bash compile-js.sh
+      - name: Prepare files
+        run: mkdir -p dist/deepimagej-build && cp dist/ij153/plugins/DeepImageJ_JS* dist/deepimagej-build
       - uses: meeDamian/github-release@2.0
         if: github.ref == 'refs/heads/main'
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: "2.0.1"
           name: deepImageJ.js
-          files: dist/ij153/plugins/DeepImageJ_JS_-2.0.1-SNAPSHOT.jar dist/ij153/plugins/DeepImageJ_JS_-2.0.1-SNAPSHOT.jar.js dist/ij153/plugins/DeepImageJ_JS_-2.0.1-SNAPSHOT.jar.config
+          files: dist/deepimagej-build
           allow_override: true
